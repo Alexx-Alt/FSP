@@ -1,0 +1,166 @@
+/* Размещение формы */
+.access-page {
+    display: grid;
+    place-items: center;
+    padding: 40px 20px;
+}
+
+.access-card {
+    width: 100%;
+    max-width: 480px;
+    padding: 36px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 24px;
+    background: rgba(10, 14, 32, 0.94);
+}
+
+.access-logo {
+    color: #a78bfa;
+    font-size: 13px;
+    font-weight: 800;
+    text-decoration: none;
+}
+
+.access-card h1 {
+    margin: 24px 0 12px;
+    font-size: 30px;
+    font-weight: 800;
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+}
+
+.access-description,
+.access-bottom {
+    color: #94a3b8;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.access-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-top: 26px;
+}
+
+/* Поля формы */
+.access-field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    color: #cbd5e1;
+    font-size: 13px;
+}
+
+.access-field input,
+.access-field select {
+    width: 100%;
+    padding: 13px 14px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 12px;
+    background: #11182c;
+    color: white;
+    font: inherit;
+}
+
+.access-field input:focus-visible,
+.access-field select:focus-visible {
+    outline: 2px solid #a78bfa;
+    outline-offset: 2px;
+}
+
+.access-error {
+    color: #fda4af;
+    font-size: 12px;
+}
+
+.access-error:empty {
+    display: none;
+}
+
+.access-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #cbd5e1;
+    font-size: 13px;
+}
+
+.access-checkbox input {
+    accent-color: #7c3aed;
+}
+
+/* Основная кнопка */
+.access-submit {
+    display: block;
+    width: 100%;
+    padding: 14px 18px;
+    border: none;
+    border-radius: 12px;
+    background: linear-gradient(90deg, #4f46e5, #7c3aed, #db2777);
+    color: white;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    text-align: center;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.access-submit:disabled,
+.access-exit:disabled {
+    opacity: 0.6;
+    cursor: wait;
+}
+
+.access-bottom {
+    margin: 24px 0 0;
+    text-align: center;
+}
+
+.access-bottom a {
+    margin-left: 6px;
+    color: #c4b5fd;
+    text-decoration: none;
+}
+
+/* Данные кабинета */
+.account-details {
+    display: grid;
+    gap: 18px;
+    margin: 28px 0;
+}
+
+.account-details dt {
+    margin-bottom: 6px;
+    color: #94a3b8;
+    font-size: 12px;
+}
+
+.account-details dd {
+    margin: 0;
+    color: white;
+    overflow-wrap: anywhere;
+}
+
+.access-exit {
+    width: 100%;
+    margin-top: 14px;
+    padding: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 12px;
+    background: transparent;
+    color: #cbd5e1;
+    font: inherit;
+    cursor: pointer;
+}
+
+@media (max-width: 480px) {
+    .access-card {
+        padding: 24px;
+    }
+
+    .access-card h1 {
+        font-size: 26px;
+    }
+}

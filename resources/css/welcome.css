@@ -1,0 +1,545 @@
+/* Основная страница */
+.main-page {
+    min-height: 100vh;
+    color: #f3f4f6;
+    font-family: 'Segoe UI', sans-serif;
+}
+
+.main-page,
+.main-page * {
+    box-sizing: border-box;
+}
+
+/* Верхняя панель */
+.header {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    padding: 18px 40px;
+    background: rgba(3, 7, 18, 0.85);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Логотип */
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: white;
+    text-decoration: none;
+    flex-shrink: 0;
+}
+
+.logo-icon {
+    display: grid;
+    place-items: center;
+    width: 46px;
+    height: 46px;
+    border-radius: 15px;
+    background: linear-gradient(45deg, #4f46e5, #7c3aed, #ec4899);
+    font-size: 18px;
+    font-weight: 900;
+}
+
+.logo-text {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.logo-text strong {
+    font-size: 18px;
+}
+
+.logo-pro {
+    color: #a78bfa;
+    font-size: 11px;
+}
+
+.logo-description {
+    color: #c4b5fd;
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+}
+
+/* Основное меню */
+.navigation {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+}
+
+.navigation-link {
+    padding: 6px 0;
+    border: none;
+    background: transparent;
+    color: #cbd5e1;
+    font-size: 12px;
+    text-decoration: none;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.navigation-link:hover {
+    color: #a78bfa;
+}
+
+/* Кнопка кабинета */
+.account-button {
+    padding: 12px 20px;
+    border-radius: 14px;
+    background: linear-gradient(90deg, #4f46e5, #7c3aed, #ec4899);
+    color: white;
+    font-size: 12px;
+    font-weight: 700;
+    text-decoration: none;
+    text-align: center;
+    box-shadow: 0 8px 24px rgba(124, 58, 237, 0.25);
+}
+
+/* Фон с мягким свечением */
+.fsp-background {
+    background-color: #080b1c;
+    background-image:
+        radial-gradient(
+            ellipse at 5% 10%,
+            rgba(124, 58, 237, 0.25),
+            transparent 55%
+        ),
+        radial-gradient(
+            ellipse at 95% 85%,
+            rgba(236, 72, 153, 0.16),
+            transparent 55%
+        ),
+        linear-gradient(
+            135deg,
+            #030712 0%,
+            #0d0a26 35%,
+            #1a0b36 70%,
+            #080f26 100%
+        );
+    background-size: 140% 140%;
+    background-repeat: no-repeat;
+    animation: background-move 24s ease-in-out infinite;
+}
+
+/* Движение фона */
+@keyframes background-move {
+    0%,
+    100% {
+        background-position: 0% 30%;
+    }
+
+    50% {
+        background-position: 100% 70%;
+    }
+}
+
+/* Содержимое на всю ширину */
+.main-content {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding: 64px 40px 48px;
+}
+
+.hero {
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+}
+
+/* Заголовок */
+.hero-title {
+    margin: 0;
+    color: white;
+    font-size: clamp(36px, 5vw, 64px);
+    font-weight: 900;
+    line-height: 1.1;
+    letter-spacing: -1.5px;
+    
+}
+
+.hero-title span {
+    display: block;
+    background: linear-gradient(90deg, #818cf8, #a78bfa, #ec4899);
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+}
+
+/* Описание платформы */
+.hero-description {
+    max-width: 720px;
+    margin: 0;
+    color: #cbd5e1;
+    font-size: 16px;
+    line-height: 1.8;
+}
+
+/* Кнопки под описанием */
+.hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.role-switch {
+    display: flex;
+    gap: 4px;
+    padding: 5px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    background: rgba(15, 23, 42, 0.65);
+}
+
+.role-button {
+    padding: 12px 22px;
+    border: none;
+    border-radius: 10px;
+    background: transparent;
+    color: #cbd5e1;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.role-active,
+.search-button {
+    background: linear-gradient(90deg, #4f46e5, #7c3aed, #ec4899);
+    color: white;
+}
+
+/* Кнопка профориентации */
+.orientation-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 14px 22px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    background: rgba(15, 23, 42, 0.65);
+    color: white;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.orientation-button span {
+    color: #a78bfa;
+}
+
+/* Строка поиска */
+.search-panel {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    background: rgba(15, 23, 42, 0.65);
+}
+
+.search-icon {
+    width: 20px;
+    height: 20px;
+    margin-left: 10px;
+    flex-shrink: 0;
+    color: #94a3b8;
+}
+
+.search-panel input {
+    flex: 1;
+    min-width: 0;
+    padding: 12px 0;
+    border: none;
+    background: transparent;
+    color: white;
+    font-family: inherit;
+    font-size: 14px;
+}
+
+.search-panel input::placeholder {
+    color: #94a3b8;
+}
+
+.search-panel input:focus-visible {
+    outline: 2px solid #a78bfa;
+    outline-offset: 4px;
+    border-radius: 4px;
+}
+
+.search-button {
+    padding: 14px 26px;
+    border: none;
+    border-radius: 13px;
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+/* Скрытая подпись поля */
+.search-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+}
+
+/* Популярные технологии */
+.popular-stack {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-top: -12px;
+    color: #94a3b8;
+    font-size: 12px;
+}
+
+.popular-stack button {
+    padding: 5px 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    background: rgba(15, 23, 42, 0.6);
+    color: #cbd5e1;
+    font-size: 11px;
+    cursor: pointer;
+}
+
+/* Подсветка кнопок */
+.hero button:hover {
+    filter: brightness(1.12);
+}
+
+/* Фокус с клавиатуры */
+.main-page button:focus-visible,
+.main-page a:focus-visible {
+    outline: 2px solid #a78bfa;
+    outline-offset: 4px;
+}
+
+/* Небольшой экран */
+@media (max-width: 1000px) {
+    .header {
+        flex-wrap: wrap;
+        padding: 18px 20px;
+    }
+
+    .navigation {
+        order: 3;
+        width: 100%;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+}
+
+/* Мобильная версия */
+@media (max-width: 600px) {
+    .main-content {
+        padding: 40px 20px;
+    }
+
+    .hero-title {
+        letter-spacing: -0.8px;
+    }
+
+    .hero-description {
+        font-size: 14px;
+    }
+
+    .search-panel {
+        flex-wrap: wrap;
+    }
+
+    .search-button {
+        width: 100%;
+    }
+
+    .role-switch,
+    .orientation-button {
+        width: 100%;
+    }
+
+    .role-button {
+        flex: 1;
+        padding: 12px;
+    }
+}
+
+@media (max-width: 480px) {
+    .logo-description {
+        display: none;
+    }
+
+    .account-button {
+        padding: 12px;
+    }
+}
+
+/* Настройка уменьшения движения */
+@media (prefers-reduced-motion: reduce) {
+    .fsp-background {
+        animation: none;
+    }
+}
+/* Блок реестра */
+.registry {
+    margin-top: 64px;
+}
+
+.registry-heading {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+    padding-bottom: 20px;
+    margin-bottom: 24px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.registry-caption {
+    color: #a78bfa;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.registry-heading h2 {
+    margin: 8px 0 0;
+    color: white;
+    font-size: clamp(22px, 3vw, 30px);
+    font-weight: 800;
+}
+
+.registry-count {
+    color: #94a3b8;
+    font-size: 12px;
+}
+
+/* Сетка карточек */
+.registry-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 20px;
+}
+
+.registry-card {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    min-width: 0;
+    padding: 24px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 22px;
+    background: rgba(15, 23, 42, 0.65);
+    overflow-wrap: anywhere;
+    transition: border-color 0.2s;
+}
+
+.registry-card:hover {
+    border-color: rgba(167, 139, 250, 0.5);
+}
+
+/* Компания или имя */
+.card-top {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.card-owner {
+    padding: 6px 10px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 9px;
+    background: rgba(3, 7, 18, 0.6);
+    color: #cbd5e1;
+    font-size: 11px;
+}
+
+.card-salary {
+    color: #34d399;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.registry-card h3 {
+    margin: 0;
+    color: white;
+    font-size: 17px;
+    font-weight: 800;
+    line-height: 1.5;
+}
+
+.card-description {
+    margin: 0;
+    color: #cbd5e1;
+    font-size: 12px;
+    line-height: 1.7;
+}
+
+/* Теги навыков */
+.card-skills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.card-skills span {
+    padding: 4px 8px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 7px;
+    background: rgba(255, 255, 255, 0.04);
+    color: #cbd5e1;
+    font-size: 10px;
+}
+
+/* Нижняя часть карточки */
+.card-footer {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 10px;
+    margin-top: auto;
+    padding-top: 16px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    color: #94a3b8;
+    font-size: 11px;
+}
+
+.registry-empty {
+    color: #94a3b8;
+    padding: 24px 0;
+}
+
+/* Две колонки */
+@media (max-width: 900px) {
+    .registry-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+/* Одна колонка */
+@media (max-width: 600px) {
+    .registry-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .registry {
+        margin-top: 40px;
+    }
+}
