@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use Illuminate\Http\Request;
 use Inertia\Middleware;
+use Illuminate\Support\Facades\DB;
 
 class HandleInertiaRequests extends Middleware
 {
@@ -41,6 +42,25 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => $request->user(),
             ],
+            // Количество своих публикаций
+            'accountStats' => function () use ($request) {
+                $user = $request->user();
+
+                     if (! $user) {
+                         return null;
+                                }
+
+                    $isEmployer = $user->role === 'employer';
+
+                    return [
+                        'publications' => DB::table($isEmployer ? 'jobs' : 'resumes')
+                            ->where(
+                                $isEmployer ? 'employer_id' : 'user_id',
+                                $user->getKey()
+                            )
+                            ->count(),
+                    ];
+                },
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];
     }

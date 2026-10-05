@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { usePage } from '@inertiajs/vue3';
+import AccountSummary from '@/components/AccountSummary.vue';
 
 interface Job {
     job_id: number;
@@ -40,10 +41,18 @@ const page = usePage<{
     };
 }>();
 
-// Начальный список зависит от аккаунта
-const role = ref<'applicant' | 'employer'>(
-    page.props.auth.user?.role ?? 'applicant',
-);
+const isLoggedIn = computed(() => Boolean(page.props.auth.user));
+const guestRole = ref<'applicant' | 'employer'>('applicant');
+
+// Для аккаунта роль берём с сервера
+const role = computed<'applicant' | 'employer'>({
+    get: () => page.props.auth.user?.role ?? guestRole.value,
+    set: (value) => {
+        if (!isLoggedIn.value) {
+            guestRole.value = value;
+        }
+    },
+});
 
 // Форматирование суммы
 function money(value: number): string {
@@ -118,9 +127,14 @@ function skillTags(skills: string | null): string[] {
                     Личный кабинет
             </Link>
         </header>
-            <!-- Основной блок -->
+        
 <main class="main-content">
-    <section class="hero">
+    <div
+        class="hero-layout"
+        :class="{ 'hero-layout-account': isLoggedIn }"
+    >
+        <section class="hero">
+             <section class="hero">
         <h1 class="hero-title">
             Единый реестр
             <span>IT-специалистов</span>
@@ -134,7 +148,7 @@ function skillTags(skills: string | null): string[] {
 
 <!-- Выбор роли и профориентация -->
 <div class="hero-actions">
-    <div class="role-switch">
+    <div v-if="!isLoggedIn" class="role-switch">
         <button
             type="button"
             class="role-button"
@@ -200,8 +214,13 @@ function skillTags(skills: string | null): string[] {
             <button type="button">Golang</button>
         </div>
     </section>
-    <!-- Реестр из базы данных -->
-<section class="registry">
+        </section>
+
+        <AccountSummary v-if="isLoggedIn" />
+    </div>
+
+    <section class="registry">
+        <section class="registry">
     <div class="registry-heading">
         <div>
             <span class="registry-caption">
@@ -311,6 +330,12 @@ function skillTags(skills: string | null): string[] {
         </p>
     </template>
 </section>
+    </section>
+</main>
+            <!-- Основной блок -->
+<main class="main-content">
+
+
 </main>
     </div>
 </template>

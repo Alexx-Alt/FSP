@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
+use Illuminate\Http\Request;
 
 Route::get('/', function () {
     // Получаем вакансии
@@ -46,6 +47,32 @@ Route::get('/', function () {
 // Кабинет доступен после входа
 Route::middleware('auth')->group(function () {
     Route::inertia('/dashboard', 'Dashboard')->name('dashboard');
+
+    // Сохраняем собственный профиль
+    Route::patch('/dashboard/profile', function (Request $request) {
+        $data = $request->validate([
+            'headline' => ['nullable', 'string', 'max:150'],
+            'city' => ['nullable', 'string', 'max:100'],
+            'bio' => ['nullable', 'string', 'max:3000'],
+            'skills' => ['nullable', 'string', 'max:255'],
+            'company' => ['nullable', 'string', 'max:100'],
+        ], [
+            'headline.max' => 'Максимум 150 символов.',
+            'city.max' => 'Максимум 100 символов.',
+            'bio.max' => 'Максимум 3000 символов.',
+            'skills.max' => 'Максимум 255 символов.',
+            'company.max' => 'Максимум 100 символов.',
+        ]);
+
+        // Компания доступна работодателю
+        if ($request->user()->role !== 'employer') {
+            $data['company'] = null;
+        }
+
+        $request->user()->update($data);
+
+        return to_route('dashboard');
+    })->name('dashboard.profile');
 });
 
 require __DIR__.'/settings.php';

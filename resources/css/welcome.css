@@ -543,3 +543,25 @@
         margin-top: 40px;
     }
 }
+/* Верхний блок главной */
+.hero-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 32px;
+    align-items: start;
+}
+
+.hero-layout-account {
+    grid-template-columns: minmax(0, 1.35fr) minmax(320px, 1fr);
+}
+
+.hero-layout .hero {
+    min-width: 0;
+}
+
+/* Карточка ниже на небольшом экране */
+@media (max-width: 1000px) {
+    .hero-layout-account {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
