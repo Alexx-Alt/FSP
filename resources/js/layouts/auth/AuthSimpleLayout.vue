@@ -1,15 +1,43 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
-defineProps<{ title?: string; description?: string }>();
+import AppLogoIcon from '@/components/AppLogoIcon.vue';
+import { home } from '@/routes';
+
+defineProps<{
+    title?: string;
+    description?: string;
+}>();
 </script>
+
 <template>
-<div class="fsp-site fsp-auth">
-<div class="ambient-glow glow-1"></div><div class="ambient-glow glow-2"></div>
-<Link href="/" class="fsp-logo relative z-10"><span class="fsp-mark">ФСП</span><span><strong>ИТ-MATCH <small>PRO</small></strong><em>Реестр спортивного программирования</em></span></Link>
-<div class="glass-panel fsp-auth-card">
-<div class="mb-8 text-center"><h1>{{ title }}</h1><p>{{ description }}</p></div>
-<slot />
-</div>
-<Link href="/" class="fsp-auth-back">← Вернуться на главную</Link>
-</div>
+    <div
+        class="flex min-h-svh flex-col items-center justify-center gap-6 bg-background p-6 md:p-10"
+    >
+        <div class="w-full max-w-sm">
+            <div class="flex flex-col gap-8">
+                <div class="flex flex-col items-center gap-4">
+                    <Link
+                        :href="home()"
+                        class="flex flex-col items-center gap-2 font-medium"
+                    >
+                        <div
+                            class="mb-1 flex h-9 w-9 items-center justify-center rounded-md"
+                        >
+                            <AppLogoIcon
+                                class="size-9 fill-current text-[var(--foreground)] dark:text-white"
+                            />
+                        </div>
+                        <span class="sr-only">{{ title }}</span>
+                    </Link>
+                    <div class="space-y-2 text-center">
+                        <h1 class="text-xl font-medium">{{ title }}</h1>
+                        <p class="text-center text-sm text-muted-foreground">
+                            {{ description }}
+                        </p>
+                    </div>
+                </div>
+                <slot />
+            </div>
+        </div>
+    </div>
 </template>

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Form, Head } from '@inertiajs/vue3';
 import InputError from '@/components/InputError.vue';
-import ПарольInput from '@/components/ПарольInput.vue';
+import PasswordInput from '@/components/PasswordInput.vue';
 import TextLink from '@/components/TextLink.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,14 +16,14 @@ defineProps<{
 
 defineOptions({
     layout: {
-        title: 'Регистрация',
-        description: 'Создай аккаунт на платформе ИТ-MATCH',
+        title: 'Create an account',
+        description: 'Enter your details below to create your account',
     },
 });
 </script>
 
 <template>
-    <Head title="Регистрация" />
+    <Head title="Register" />
 
     <Form
         v-bind="store.form()"
@@ -33,7 +33,7 @@ defineOptions({
     >
         <div class="grid gap-6">
             <div class="grid gap-2">
-                <Label for="name">Имя пользователя</Label>
+                <Label for="name">Name</Label>
                 <Input
                     id="name"
                     type="text"
@@ -42,13 +42,13 @@ defineOptions({
                     :tabindex="1"
                     autocomplete="name"
                     name="name"
-                    placeholder="Имя пользователя"
+                    placeholder="Full name"
                 />
                 <InputError :message="errors.name" />
             </div>
 
             <div class="grid gap-2">
-                <Label for="email">Электронная почта</Label>
+                <Label for="email">Email address</Label>
                 <Input
                     id="email"
                     type="email"
@@ -62,28 +62,28 @@ defineOptions({
             </div>
 
             <div class="grid gap-2">
-                <Label for="password">Пароль</Label>
-                <ПарольInput
+                <Label for="password">Password</Label>
+                <PasswordInput
                     id="password"
                     required
                     :tabindex="3"
                     autocomplete="new-password"
                     name="password"
-                    placeholder="Пароль"
+                    placeholder="Password"
                     :passwordrules="passwordRules"
                 />
                 <InputError :message="errors.password" />
             </div>
 
             <div class="grid gap-2">
-                <Label for="password_confirmation">Повтори пароль</Label>
-                <ПарольInput
+                <Label for="password_confirmation">Confirm password</Label>
+                <PasswordInput
                     id="password_confirmation"
                     required
                     :tabindex="4"
                     autocomplete="new-password"
                     name="password_confirmation"
-                    placeholder="Повтори пароль"
+                    placeholder="Confirm password"
                     :passwordrules="passwordRules"
                 />
                 <InputError :message="errors.password_confirmation" />
@@ -97,19 +97,18 @@ defineOptions({
                 data-test="register-user-button"
             >
                 <Spinner v-if="processing" />
-                Создать аккаунт
+                Create account
             </Button>
         </div>
 
         <div class="text-center text-sm text-muted-foreground">
-            Уже есть аккаунт?
+            Already have an account?
             <TextLink
                 :href="login()"
                 class="underline underline-offset-4"
                 :tabindex="6"
-                >Войти</TextLink
+                >Log in</TextLink
             >
         </div>
     </Form>
 </template>
-
