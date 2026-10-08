@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - feature/fsp-match-v6-analytics
   pull_request:
 
 permissions:
@@ -30,9 +31,20 @@ jobs:
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: '22'
+          cache: npm
 
-      - name: Setup Application
+      - name: Setup Application + Frontend Build
         run: composer setup
 
       - name: Run CI Checks
         run: composer ci:check
+
+      - name: Verify core PHP syntax
+        run: |
+          php -l app/Http/Controllers/JuryDemoController.php
+          php -l app/Http/Controllers/EmployerJobsController.php
+          php -l app/Http/Controllers/CandidateSettingsController.php
+          php -l app/Services/Fsp/MatchEngine.php
+          php -l app/Services/Fsp/LiveAssessmentService.php
+          php -l routes/web.php
+          php -l routes/console.php
