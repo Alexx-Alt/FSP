@@ -14,6 +14,8 @@ class ApplicationDecisionController extends Controller
         /** @var User $user */
         $user = $request->user();
         abort_unless($user->role === 'employer', 403);
+        $data = $request->validate(['message' => ['nullable', 'string', 'max:1500']]);
+        $message = trim((string) ($data['message'] ?? ''));
 
         $caseRow = DB::table('interaction_cases')->where('case_id', $case)->first();
         abort_unless($caseRow, 404);
@@ -27,7 +29,7 @@ class ApplicationDecisionController extends Controller
             ->exists();
         abort_unless($allowed, 403);
 
-        DB::transaction(function () use ($caseRow, $user) {
+        DB::transaction(function () use ($caseRow, $user, $message) {
             DB::table('interaction_cases')->where('case_id', $caseRow->case_id)->update([
                 'status' => 'screening',
                 'progress' => 25,
@@ -41,10 +43,20 @@ class ApplicationDecisionController extends Controller
                 'actor_user_id' => $user->getKey(),
                 'event_type' => 'application_accepted',
                 'title' => 'Работодатель принял отклик',
-                'details' => 'После взаимного шага контакты сторон разблокированы.',
-                'metadata' => json_encode(['contacts_unlocked' => true], JSON_UNESCAPED_UNICODE),
+                'details' => $message !== '' ? $message : 'После взаимного шага контакты сторон разблокированы.',
+                'metadata' => json_encode(['contacts_unlocked' => true, 'has_message' => $message !== ''], JSON_UNESCAPED_UNICODE),
                 'created_at' => now(),
             ]);
+
+            if ($message !== '') {
+                DB::table('case_comments')->insert([
+                    'case_id' => $caseRow->case_id,
+                    'user_id' => $user->getKey(),
+                    'body' => '[Ответ на отклик] '.$message,
+                    'is_internal' => false,
+                    'created_at' => now(),
+                ]);
+            }
 
             DB::table('interaction_alerts')->insert([
                 'user_id' => $caseRow->candidate_id,
