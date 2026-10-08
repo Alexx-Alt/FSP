@@ -5,7 +5,9 @@ import AuthLayout from '@/layouts/AuthLayout.vue';
 import SettingsLayout from '@/layouts/settings/Layout.vue';
 import { initializeFlashToast } from '@/lib/flashToast';
 import { installFspEnhancements } from '@/lib/fspEnhancements';
+import { installFspInteractions } from '@/lib/fspInteractions';
 import '../css/fsp-enhancements.css';
+import '../css/fsp-v6-fixes.css';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
@@ -20,6 +22,7 @@ void createInertiaApp({
             case name === 'Dashboard':
             case name === 'FspWorkspace':
             case name === 'CandidateCenter':
+            case name === 'AssessmentSession':
             case name.startsWith('auth/'):
                 return null;
         }
@@ -40,3 +43,4 @@ void createInertiaApp({
 
 initializeFlashToast();
 installFspEnhancements();
+installFspInteractions();
