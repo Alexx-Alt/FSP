@@ -142,8 +142,11 @@ function renderCandidateComparison(root:HTMLElement,items:any[]):void{
     ]);
 }
 
-function messageDialog(kind:'apply'|'invite', title:string, submit:(message:string)=>void):void{
-    const root=modal(kind==='apply'?'Отклик на вакансию':'Адресное приглашение',`<div class="fsp-feedback-form"><p>${esc(title)}</p><label>${kind==='apply'?'Сопроводительное сообщение работодателю':'Комментарий кандидату'}<textarea maxlength="1500" rows="6" placeholder="Коротко: почему это интересно, что хотите обсудить, важные условия…"></textarea></label><div class="fsp-modal-actions"><button type="button" data-cancel>Отмена</button><button type="button" class="primary" data-send>${kind==='apply'?'Отправить отклик':'Отправить приглашение'}</button></div></div>`);
+function messageDialog(kind:'apply'|'invite'|'accept', title:string, submit:(message:string)=>void):void{
+    const heading=kind==='apply'?'Отклик на вакансию':kind==='invite'?'Адресное приглашение':'Принять отклик';
+    const label=kind==='apply'?'Сопроводительное сообщение работодателю':kind==='invite'?'Комментарий кандидату':'Ответ кандидату';
+    const send=kind==='apply'?'Отправить отклик':kind==='invite'?'Отправить приглашение':'Принять и ответить';
+    const root=modal(heading,`<div class="fsp-feedback-form"><p>${esc(title)}</p><label>${label}<textarea maxlength="1500" rows="6" placeholder="Коротко: следующий шаг, важные условия, что хотите обсудить…"></textarea></label><div class="fsp-modal-actions"><button type="button" data-cancel>Отмена</button><button type="button" class="primary" data-send>${send}</button></div></div>`);
     root.querySelector('[data-cancel]')?.addEventListener('click',closeModal);
     root.querySelector('[data-send]')?.addEventListener('click',()=>{const text=root.querySelector<HTMLTextAreaElement>('textarea')?.value.trim()??'';closeModal();submit(text);});
 }
@@ -172,17 +175,28 @@ function bindActionCapture():void{
         if(!button)return;
         const m=mode();
         if(m==='candidate'&&button.classList.contains('apply')){
-            event.preventDefault();event.stopImmediatePropagation();
             const card=button.closest('.match-card,.matches > article');if(!card)return;
+            event.preventDefault();event.stopImmediatePropagation();
             const all=Array.from(document.querySelectorAll('.candidate-shell .match-card')).length?Array.from(document.querySelectorAll('.candidate-shell .match-card')):Array.from(document.querySelectorAll('.fsp-shell .matches > article'));
             const index=all.indexOf(card);const item=(workspace()?.matches??[])[index];if(!item?.jobId)return;
             messageDialog('apply',`${item.company} · ${item.title}`,(message)=>router.post(`/interactions/jobs/${item.jobId}/apply`,{message},{preserveScroll:true}));
+            return;
         }
         if(m==='employer'&&button.classList.contains('invite')){
-            event.preventDefault();event.stopImmediatePropagation();
-            const card=button.closest('.candidate');if(!card)return;
-            const all=Array.from(document.querySelectorAll('.fsp-shell .candidate'));const index=all.indexOf(card);const item=(workspace()?.candidateMatches??[])[index];if(!item?.candidateId||!item?.jobId)return;
-            messageDialog('invite',`${item.candidateName} · ${item.jobTitle??'вакансия'}`,(message)=>router.post(`/interactions/jobs/${item.jobId}/candidates/${item.candidateId}/invite`,{message},{preserveScroll:true}));
+            const candidateCard=button.closest('.candidate');
+            if(candidateCard){
+                event.preventDefault();event.stopImmediatePropagation();
+                const all=Array.from(document.querySelectorAll('.fsp-shell .candidate'));const index=all.indexOf(candidateCard);const item=(workspace()?.candidateMatches??[])[index];if(!item?.candidateId||!item?.jobId)return;
+                messageDialog('invite',`${item.candidateName} · ${item.jobTitle??'вакансия'}`,(message)=>router.post(`/interactions/jobs/${item.jobId}/candidates/${item.candidateId}/invite`,{message},{preserveScroll:true}));
+                return;
+            }
+            const decision=button.closest('.fsp-application-decision');
+            const caseCard=button.closest('.case');
+            if(decision&&caseCard){
+                event.preventDefault();event.stopImmediatePropagation();
+                const all=Array.from(document.querySelectorAll('.fsp-shell .case'));const index=all.indexOf(caseCard);const item=(workspace()?.cases??[])[index];if(!item?.id)return;
+                messageDialog('accept',`${item.candidate} · ${item.job??'отклик'}`,(message)=>router.post(`/interactions/cases/${item.id}/accept-application`,{message},{preserveScroll:true}));
+            }
         }
     },true);
 }
