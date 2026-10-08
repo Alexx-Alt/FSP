@@ -21,6 +21,7 @@ import '../css/fsp-role-nav.css';
 import '../css/fsp-bulk-invites.css';
 import '../css/jury-demo.css';
 import '../css/employer-jobs.css';
+import '../css/employer-trust.css';
 import '../css/candidate-settings.css';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
