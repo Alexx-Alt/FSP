@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Services\Fsp\MatchEngine;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 class ComparisonController extends Controller
@@ -16,17 +17,45 @@ class ComparisonController extends Controller
         $user = $request->user();
         abort_unless($user->role === 'applicant', 403);
 
-        $jobs = DB::table('jobs as j')
+        $filters = $request->validate([
+            'city' => ['nullable', 'string', 'max:100'],
+            'grade' => ['nullable', 'in:intern,junior,middle,senior,lead'],
+            'format' => ['nullable', 'in:office,hybrid,remote,any'],
+            'score_min' => ['nullable', 'integer', 'min:0', 'max:100'],
+            'q' => ['nullable', 'string', 'max:120'],
+            'sort' => ['nullable', 'in:score_desc,salary_desc,quality_desc,response_asc'],
+        ]);
+
+        $jobsQuery = DB::table('jobs as j')
             ->leftJoin('companies as c', 'c.company_id', '=', 'j.company_id')
             ->where('j.status', 'open')
             ->select(
                 'j.job_id', 'j.company_id', 'j.title', 'j.location', 'j.grade_required', 'j.salary_min', 'j.salary_max', 'j.work_format',
                 'c.name as company_name', 'c.city as company_city', 'c.industry', 'c.size_band', 'c.hiring_quality_score', 'c.avg_response_hours', 'c.acceptance_rate'
-            )
-            ->get();
+            );
+
+        if (! empty($filters['city'])) {
+            $city = $filters['city'];
+            $jobsQuery->where(function ($query) use ($city) {
+                $query->where('j.location', $city)->orWhere('c.city', $city);
+            });
+        }
+        if (! empty($filters['grade'])) {
+            $jobsQuery->where('j.grade_required', $filters['grade']);
+        }
+        if (! empty($filters['format'])) {
+            $jobsQuery->where('j.work_format', $filters['format']);
+        }
+        if (! empty($filters['q'])) {
+            $needle = $filters['q'];
+            $jobsQuery->where(function ($query) use ($needle) {
+                $query->where('j.title', 'like', '%'.$needle.'%')
+                    ->orWhere('c.name', 'like', '%'.$needle.'%');
+            });
+        }
 
         $best = [];
-        foreach ($jobs as $job) {
+        foreach ($jobsQuery->get() as $job) {
             $match = $engine->compare((int) $user->getKey(), (int) $job->job_id);
             $companyId = (int) ($job->company_id ?? 0);
             if ($companyId <= 0) {
@@ -56,8 +85,17 @@ class ComparisonController extends Controller
             ];
         }
 
-        $items = collect(array_values($best))->sortByDesc('score')->values()->all();
-        return response()->json(['items' => $items]);
+        $items = collect(array_values($best));
+        if (isset($filters['score_min'])) {
+            $items = $items->filter(fn (array $row) => (int) ($row['score'] ?? 0) >= (int) $filters['score_min']);
+        }
+
+        $items = $this->sortCompanies($items, $filters['sort'] ?? 'score_desc');
+
+        return response()->json([
+            'items' => $items->values()->all(),
+            'filters' => $filters,
+        ]);
     }
 
     public function candidates(Request $request, MatchEngine $engine): JsonResponse
@@ -65,6 +103,18 @@ class ComparisonController extends Controller
         /** @var User $user */
         $user = $request->user();
         abort_unless($user->role === 'employer', 403);
+
+        $filters = $request->validate([
+            'city' => ['nullable', 'string', 'max:100'],
+            'category' => ['nullable', 'in:Backend,Frontend,Data,ML/AI,DevOps,Full-stack'],
+            'grade' => ['nullable', 'in:intern,junior,middle,senior,lead'],
+            'format' => ['nullable', 'in:office,hybrid,remote,any'],
+            'score_min' => ['nullable', 'integer', 'min:0', 'max:100'],
+            'assessment_min' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'integrity_min' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'q' => ['nullable', 'string', 'max:120'],
+            'sort' => ['nullable', 'in:score_desc,assessment_desc,integrity_desc,evidence_desc'],
+        ]);
 
         $companyId = DB::table('company_members')
             ->where('user_id', $user->getKey())
@@ -78,10 +128,30 @@ class ComparisonController extends Controller
             ->get();
         abort_if($jobs->isEmpty(), 422, 'Сначала создайте открытую вакансию.');
 
-        $candidates = DB::table('users')->where('role', 'applicant')->get();
-        $items = [];
+        $candidateQuery = DB::table('users')->where('role', 'applicant');
+        if (! empty($filters['city'])) {
+            $candidateQuery->where('city', $filters['city']);
+        }
+        if (! empty($filters['category'])) {
+            $candidateQuery->where('primary_category', $filters['category']);
+        }
+        if (! empty($filters['grade'])) {
+            $candidateQuery->where('confirmed_grade', $filters['grade']);
+        }
+        if (! empty($filters['format'])) {
+            $candidateQuery->where('work_format', $filters['format']);
+        }
+        if (! empty($filters['q'])) {
+            $needle = $filters['q'];
+            $candidateQuery->where(function ($query) use ($needle) {
+                $query->where('username', 'like', '%'.$needle.'%')
+                    ->orWhere('headline', 'like', '%'.$needle.'%')
+                    ->orWhere('skills', 'like', '%'.$needle.'%');
+            });
+        }
 
-        foreach ($candidates as $candidate) {
+        $items = [];
+        foreach ($candidateQuery->get() as $candidate) {
             $best = null;
             foreach ($jobs as $job) {
                 $match = $engine->compare((int) $candidate->user_id, (int) $job->job_id);
@@ -116,6 +186,8 @@ class ComparisonController extends Controller
                 'candidateId' => (int) $candidate->user_id,
                 'name' => $candidate->username,
                 'headline' => $candidate->headline,
+                'bio' => $candidate->bio,
+                'skills' => $candidate->skills,
                 'city' => $candidate->city,
                 'category' => $candidate->primary_category,
                 'desiredGrade' => $candidate->desired_grade,
@@ -125,14 +197,51 @@ class ComparisonController extends Controller
                 'workFormat' => $candidate->work_format,
                 'assessmentScore' => $assessment?->score === null ? null : (float) $assessment->score,
                 'integrityScore' => $assessment?->integrity_score === null ? null : (float) $assessment->integrity_score,
-                'confirmedSkills' => $confirmedSkills,
-                'fspEvidence' => $fspEvidence,
+                'confirmedSkills' => (int) $confirmedSkills,
+                'fspEvidence' => (int) $fspEvidence,
                 ...$best,
             ];
         }
 
-        usort($items, fn (array $a, array $b) => ($b['score'] ?? 0) <=> ($a['score'] ?? 0));
-        return response()->json(['items' => array_slice($items, 0, 30)]);
+        $collection = collect($items);
+        if (isset($filters['score_min'])) {
+            $collection = $collection->filter(fn (array $row) => (int) ($row['score'] ?? 0) >= (int) $filters['score_min']);
+        }
+        if (isset($filters['assessment_min'])) {
+            $collection = $collection->filter(fn (array $row) => (float) ($row['assessmentScore'] ?? 0) >= (float) $filters['assessment_min']);
+        }
+        if (isset($filters['integrity_min'])) {
+            $collection = $collection->filter(fn (array $row) => (float) ($row['integrityScore'] ?? 0) >= (float) $filters['integrity_min']);
+        }
+
+        $collection = $this->sortCandidates($collection, $filters['sort'] ?? 'score_desc');
+
+        return response()->json([
+            'items' => $collection->take(60)->values()->all(),
+            'filters' => $filters,
+        ]);
+    }
+
+    /** @param Collection<int, array<string,mixed>> $items */
+    private function sortCompanies(Collection $items, string $sort): Collection
+    {
+        return match ($sort) {
+            'salary_desc' => $items->sortByDesc(fn (array $row) => (int) ($row['salaryMax'] ?? 0)),
+            'quality_desc' => $items->sortByDesc(fn (array $row) => (float) ($row['quality'] ?? 0)),
+            'response_asc' => $items->sortBy(fn (array $row) => (float) ($row['responseHours'] ?? PHP_FLOAT_MAX)),
+            default => $items->sortByDesc(fn (array $row) => (int) ($row['score'] ?? 0)),
+        };
+    }
+
+    /** @param Collection<int, array<string,mixed>> $items */
+    private function sortCandidates(Collection $items, string $sort): Collection
+    {
+        return match ($sort) {
+            'assessment_desc' => $items->sortByDesc(fn (array $row) => (float) ($row['assessmentScore'] ?? 0)),
+            'integrity_desc' => $items->sortByDesc(fn (array $row) => (float) ($row['integrityScore'] ?? 0)),
+            'evidence_desc' => $items->sortByDesc(fn (array $row) => (int) ($row['confirmedSkills'] ?? 0)),
+            default => $items->sortByDesc(fn (array $row) => (int) ($row['score'] ?? 0)),
+        };
     }
 
     /** @param array<string,mixed> $match */
