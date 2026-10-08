@@ -17,19 +17,22 @@ use Illuminate\Notifications\Notifiable;
     'bio',
     'skills',
     'company',
+    'primary_category',
+    'desired_grade',
+    'confirmed_grade',
+    'grade_status',
+    'salary_expected',
+    'work_format',
 ])]
 #[Hidden(['password_hash', 'remember_token'])]
 class User extends Authenticatable
 {
     use Notifiable;
 
-    // Ключ нашей таблицы
     protected $primaryKey = 'user_id';
 
-    // В таблице нет updated_at
     public $timestamps = false;
 
-    // Столбец с хешем пароля
     public function getAuthPasswordName(): string
     {
         return 'password_hash';
@@ -40,6 +43,7 @@ class User extends Authenticatable
         return [
             'password_hash' => 'hashed',
             'created_at' => 'datetime',
+            'salary_expected' => 'integer',
         ];
     }
 }
