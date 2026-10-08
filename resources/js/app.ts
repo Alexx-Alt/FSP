@@ -14,6 +14,7 @@ void createInertiaApp({
             case name === 'Welcome':
             case name === 'Dashboard':
             case name === 'FspWorkspace':
+            case name === 'CandidateCenter':
             case name.startsWith('auth/'):
                 return null;
         }
