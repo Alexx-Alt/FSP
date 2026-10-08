@@ -1,54 +1,38 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\DB;
-use Inertia\Inertia;
+use App\Http\Controllers\WorkspaceController;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Route;
+use Illuminate\Validation\Rule;
+use Inertia\Inertia;
 
 Route::get('/', function () {
-    // Получаем вакансии
     $jobs = DB::table('jobs')
-        ->select(
-            'job_id',
-            'company',
-            'title',
-            'description',
-            'location',
-            'salary_min',
-            'salary_max',
-            'skills'
-        )
+        ->select('job_id', 'company', 'title', 'description', 'location', 'salary_min', 'salary_max', 'skills')
+        ->where('status', 'open')
         ->orderByDesc('job_id')
         ->get();
 
-    // Получаем резюме с именами
     $resumes = DB::table('resumes')
         ->join('users', 'users.user_id', '=', 'resumes.user_id')
-        ->select(
-            'resumes.resume_id',
-            'users.username',
-            'resumes.title',
-            'resumes.description',
-            'resumes.location',
-            'resumes.salary_expected',
-            'resumes.skills',
-            'resumes.experience_years'
-        )
+        ->select('resumes.resume_id', 'users.username', 'resumes.title', 'resumes.description', 'resumes.location', 'resumes.salary_expected', 'resumes.skills', 'resumes.experience_years')
         ->orderByDesc('resumes.resume_id')
         ->get();
 
-    // Передаём данные странице
-    return Inertia::render('Welcome', [
-        'jobs' => $jobs,
-        'resumes' => $resumes,
-    ]);
+    return Inertia::render('Welcome', ['jobs' => $jobs, 'resumes' => $resumes]);
 })->name('home');
 
-// Кабинет доступен после входа
 Route::middleware('auth')->group(function () {
-    Route::inertia('/dashboard', 'Dashboard')->name('dashboard');
+    Route::get('/dashboard', fn () => redirect()->route('workspace'))->name('dashboard');
+    Route::get('/workspace', [WorkspaceController::class, 'show'])->name('workspace');
 
-    // Сохраняем собственный профиль
+    Route::post('/workspace/cases/{case}/comments', [WorkspaceController::class, 'comment'])->whereNumber('case')->name('workspace.cases.comments');
+    Route::post('/workspace/cases/{case}/tasks', [WorkspaceController::class, 'addTask'])->whereNumber('case')->name('workspace.cases.tasks');
+    Route::post('/workspace/cases/{case}/respond', [WorkspaceController::class, 'respondInvitation'])->whereNumber('case')->name('workspace.cases.respond');
+    Route::patch('/workspace/cases/{case}/tasks/{task}', [WorkspaceController::class, 'updateTask'])->whereNumber('case')->whereNumber('task')->name('workspace.cases.tasks.update');
+    Route::patch('/workspace/cases/{case}/status', [WorkspaceController::class, 'updateStatus'])->whereNumber('case')->name('workspace.cases.status');
+
     Route::patch('/dashboard/profile', function (Request $request) {
         $data = $request->validate([
             'headline' => ['nullable', 'string', 'max:150'],
@@ -56,22 +40,21 @@ Route::middleware('auth')->group(function () {
             'bio' => ['nullable', 'string', 'max:3000'],
             'skills' => ['nullable', 'string', 'max:255'],
             'company' => ['nullable', 'string', 'max:100'],
-        ], [
-            'headline.max' => 'Максимум 150 символов.',
-            'city.max' => 'Максимум 100 символов.',
-            'bio.max' => 'Максимум 3000 символов.',
-            'skills.max' => 'Максимум 255 символов.',
-            'company.max' => 'Максимум 100 символов.',
+            'primary_category' => ['nullable', Rule::in(['Backend', 'Frontend'])],
+            'desired_grade' => ['nullable', Rule::in(['intern', 'junior', 'middle', 'senior', 'lead'])],
+            'salary_expected' => ['nullable', 'integer', 'min:0', 'max:2000000'],
+            'work_format' => ['nullable', Rule::in(['office', 'hybrid', 'remote', 'any'])],
         ]);
 
-        // Компания доступна работодателю
         if ($request->user()->role !== 'employer') {
             $data['company'] = null;
         }
+        if ($request->user()->role !== 'applicant') {
+            unset($data['desired_grade'], $data['salary_expected'], $data['work_format']);
+        }
 
         $request->user()->update($data);
-
-        return to_route('dashboard');
+        return to_route('workspace');
     })->name('dashboard.profile');
 });
 
