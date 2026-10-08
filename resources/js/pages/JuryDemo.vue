@@ -48,10 +48,10 @@ const logout = () => router.post('/logout');
                 </div>
             </div>
             <aside class="jury-score-card">
-                <span>Готовность по критериям</span>
+                <span>Готовность по официальным критериям</span>
                 <strong>{{ readiness }}<small>/{{ totalWeight }}</small></strong>
                 <div class="jury-ring" :style="{'--score': `${readiness}%`}"><i></i></div>
-                <p>{{ passed }} из {{ criteria.length }} контуров подтверждены данными проекта.</p>
+                <p>{{ passed }} из {{ criteria.length }} контуров подтверждены работающими механизмами и данными проекта.</p>
             </aside>
         </section>
 
@@ -61,7 +61,7 @@ const logout = () => router.post('/logout');
                 <article><span>Компании</span><b>{{ snapshot.companies }}</b><small>{{ snapshot.openJobs }} открытых вакансий</small></article>
                 <article><span>География</span><b>{{ snapshot.cities }}</b><small>городов в аналитике</small></article>
                 <article><span>FSP evidence</span><b>{{ snapshot.verifiedFsp }}</b><small>подтверждённых достижений</small></article>
-                <article><span>Assessment</span><b>{{ snapshot.avgAssessment ?? '—' }}</b><small>средний score</small></article>
+                <article><span>Match F1</span><b>{{ pct(snapshot.matchF1) }}</b><small>{{ snapshot.matchPairs ?? 0 }} размеченных пар</small></article>
                 <article><span>Integrity</span><b>{{ snapshot.avgIntegrity ?? '—' }}</b><small>средний показатель</small></article>
                 <article><span>Test-retest</span><b>{{ pct(snapshot.gradeStability) }}</b><small>стабильность грейда</small></article>
                 <article><span>Процессы</span><b>{{ snapshot.activeCases }}</b><small>{{ snapshot.contactsUnlocked }} с открытыми контактами</small></article>
@@ -96,17 +96,22 @@ const logout = () => router.post('/logout');
         </template>
 
         <template v-else-if="tab==='criteria'">
-            <section class="jury-section-head"><span class="eyebrow">Матрица оценки</span><h2>Что жюри может проверить руками</h2><p>Каждый критерий привязан не к презентации, а к конкретной части работающей системы.</p></section>
+            <section class="jury-section-head"><span class="eyebrow">Матрица оценки ФСП · 100%</span><h2>Что жюри может проверить руками</h2><p>Вес каждого блока соответствует официальному ТЗ: 35 / 25 / 10 / 7 / 6 / 7 / 10. Каждый критерий привязан к работающей части системы.</p></section>
             <div class="jury-criteria">
                 <article v-for="item in criteria" :key="item.key" :class="{ready:item.status}">
-                    <div class="jury-criteria-status"><span>{{ item.status ? '✓' : '!' }}</span><b>{{ item.weight }} баллов</b></div>
+                    <div class="jury-criteria-status"><span>{{ item.status ? '✓' : '!' }}</span><b>{{ item.weight }}%</b></div>
                     <div><h3>{{ item.title }}</h3><p>{{ item.proof }}</p></div>
                     <strong>{{ item.status ? 'ГОТОВО' : 'ТРЕБУЕТ ДАННЫХ' }}</strong>
                 </article>
             </div>
             <section class="jury-card jury-validation">
-                <div><span class="eyebrow">Валидация</span><h2>Показатели воспроизводимости</h2></div>
+                <div><span class="eyebrow">Воспроизводимая валидация</span><h2>Match + assessment проверяются числами</h2><p>Match-метрики считаются прямо на размеченном synthetic dataset. Тот же расчёт можно повторить командой <code>php artisan fsp:validate</code>.</p></div>
                 <div class="jury-validation-metrics">
+                    <article><span>Match pairs</span><b>{{ snapshot.matchPairs ?? 0 }}</b></article>
+                    <article><span>Precision</span><b>{{ pct(snapshot.matchPrecision) }}</b></article>
+                    <article><span>Recall</span><b>{{ pct(snapshot.matchRecall) }}</b></article>
+                    <article class="accent"><span>Match F1</span><b>{{ pct(snapshot.matchF1) }}</b></article>
+                    <article><span>Score separation</span><b>{{ snapshot.scoreSeparation ?? '—' }}</b></article>
                     <article><span>Retest pairs</span><b>{{ snapshot.retestPairs }}</b></article>
                     <article><span>Средний Δ score</span><b>{{ snapshot.avgRetestDelta ?? '—' }}</b></article>
                     <article><span>Стабильность грейда</span><b>{{ pct(snapshot.gradeStability) }}</b></article>
@@ -116,14 +121,15 @@ const logout = () => router.post('/logout');
         </template>
 
         <template v-else-if="tab==='scenario'">
-            <section class="jury-section-head"><span class="eyebrow">Сценарий защиты</span><h2>Показываем систему за 7–10 минут</h2><p>Порядок специально выстроен так, чтобы сначала показать основной критерий, потом доказательность и только затем аналитику.</p></section>
+            <section class="jury-section-head"><span class="eyebrow">Сценарий защиты</span><h2>Показываем систему за 7–10 минут</h2><p>Порядок выстроен по весу критериев: сначала новая механика подбора и тестирование, затем процесс, валидация и архитектура.</p></section>
             <div class="jury-scenarios">
                 <article v-for="(scenario,index) in scenarios" :key="scenario.title">
                     <span class="jury-step">{{ String(index+1).padStart(2,'0') }}</span>
                     <div><h3>{{ scenario.title }}</h3><ol><li v-for="step in scenario.steps" :key="step">{{ step }}</li></ol></div>
                     <div class="jury-scenario-link">
                         <Link v-if="index===0" href="/candidate">Кабинет кандидата →</Link>
-                        <Link v-else-if="index===1 || index===2" href="/workspace">Workspace →</Link>
+                        <Link v-else-if="index===1" href="/employer/jobs">Vacancy Studio →</Link>
+                        <Link v-else-if="index===2" href="/workspace">Process Center →</Link>
                         <button v-else @click="tab='criteria'">Критерии →</button>
                     </div>
                 </article>
@@ -138,12 +144,12 @@ const logout = () => router.post('/logout');
         <template v-else>
             <section class="jury-section-head"><span class="eyebrow">Архитектура</span><h2>Прозрачный контур без скрытой магии</h2><p>Каждый слой можно тестировать независимо, а критический путь остаётся доступным без GPU.</p></section>
             <div class="jury-architecture">
-                <article><span>01</span><h3>Identity / FSP ID</h3><p>Mock-адаптер достижений и готовая точка расширения для реальной интеграции.</p><div><b>users</b><b>fsp_achievements</b></div></article>
+                <article><span>01</span><h3>Identity / FSP ID</h3><p>Mock-адаптер достижений, privacy/consent и готовая точка расширения для Keycloak/FSP ID.</p><div><b>users</b><b>fsp_achievements</b></div></article>
                 <article><span>02</span><h3>Qualification</h3><p>Банк вопросов, live-session, практическое задание, integrity и test-retest.</p><div><b>assessment_*</b><b>evidence</b></div></article>
-                <article><span>03</span><h3>Knowledge graph</h3><p>Иерархия компетенций и evidence-состояния для каждого узла.</p><div><b>skill_nodes</b><b>candidate_skill_evidence</b></div></article>
-                <article><span>04</span><h3>Match Engine</h3><p>Детерминированное сравнение категории, грейда, стека, зарплаты и формата.</p><div><b>PHP service</b><b>reasons / gaps</b></div></article>
+                <article><span>03</span><h3>Knowledge graph</h3><p>Иерархия компетенций, evidence-состояния, gaps и интерактивный Obsidian-like граф.</p><div><b>skill_nodes</b><b>candidate_skill_evidence</b></div></article>
+                <article><span>04</span><h3>Match Engine</h3><p>Детерминированное сравнение категории, грейда, стека, зарплаты и формата + reasons/gaps.</p><div><b>PHP service</b><b>validation_pairs</b></div></article>
                 <article><span>05</span><h3>Process Center</h3><p>Отклик, приглашение, ЛПР, задачи, комментарии, SLA, события и возвраты.</p><div><b>interaction_cases</b><b>case_events</b></div></article>
-                <article><span>06</span><h3>Analytics</h3><p>Три независимых слоя: люди, компании и география России.</p><div><b>benchmarks</b><b>admin audit</b></div></article>
+                <article><span>06</span><h3>Analytics / API</h3><p>Люди, компании, география, OpenAPI и воспроизводимый Docker-контур.</p><div><b>benchmarks</b><b>OpenAPI</b><b>Docker</b></div></article>
             </div>
         </template>
     </main>
