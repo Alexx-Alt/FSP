@@ -6,6 +6,7 @@ import SettingsLayout from '@/layouts/settings/Layout.vue';
 import { initializeFlashToast } from '@/lib/flashToast';
 import { installFspEnhancements } from '@/lib/fspEnhancements';
 import { installFspInteractions } from '@/lib/fspInteractions';
+import { installFspProcessActions } from '@/lib/fspProcessActions';
 import '../css/fsp-enhancements.css';
 import '../css/fsp-v6-fixes.css';
 
@@ -44,3 +45,4 @@ void createInertiaApp({
 initializeFlashToast();
 installFspEnhancements();
 installFspInteractions();
+installFspProcessActions();
