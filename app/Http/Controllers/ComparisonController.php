@@ -23,7 +23,7 @@ class ComparisonController extends Controller
             'format' => ['nullable', 'in:office,hybrid,remote,any'],
             'score_min' => ['nullable', 'integer', 'min:0', 'max:100'],
             'q' => ['nullable', 'string', 'max:120'],
-            'sort' => ['nullable', 'in:score_desc,salary_desc,quality_desc,response_asc'],
+            'sort' => ['nullable', 'in:score_desc,salary_desc,quality_desc,response_asc,company_asc,city_asc'],
         ]);
 
         $jobsQuery = DB::table('jobs as j')
@@ -229,6 +229,8 @@ class ComparisonController extends Controller
             'salary_desc' => $items->sortByDesc(fn (array $row) => (int) ($row['salaryMax'] ?? 0)),
             'quality_desc' => $items->sortByDesc(fn (array $row) => (float) ($row['quality'] ?? 0)),
             'response_asc' => $items->sortBy(fn (array $row) => (float) ($row['responseHours'] ?? PHP_FLOAT_MAX)),
+            'company_asc' => $items->sortBy(fn (array $row) => mb_strtolower((string) ($row['company'] ?? ''))),
+            'city_asc' => $items->sortBy(fn (array $row) => mb_strtolower((string) ($row['companyCity'] ?? $row['location'] ?? ''))),
             default => $items->sortByDesc(fn (array $row) => (int) ($row['score'] ?? 0)),
         };
     }
