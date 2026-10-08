@@ -16,6 +16,7 @@ import '../css/fsp-compare-feedback.css';
 import '../css/fsp-theme-hardening.css';
 import '../css/fsp-product-polish.css';
 import '../css/jury-demo.css';
+import '../css/employer-jobs.css';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
@@ -32,6 +33,7 @@ void createInertiaApp({
             case name === 'CandidateCenter':
             case name === 'AssessmentSession':
             case name === 'JuryDemo':
+            case name === 'EmployerJobs':
             case name.startsWith('auth/'):
                 return null;
         }
