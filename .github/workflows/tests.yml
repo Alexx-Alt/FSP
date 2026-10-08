@@ -33,17 +33,33 @@ jobs:
           node-version: '22'
           cache: npm
 
-      - name: Setup Application + Frontend Build
-        run: composer setup
+      - name: Install PHP dependencies
+        run: composer install --no-interaction --prefer-dist
+
+      - name: Prepare CI application
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+          touch database/database.sqlite
+          DB_CONNECTION=sqlite DB_DATABASE="$(pwd)/database/database.sqlite" php artisan migrate --force
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Build frontend
+        run: npm run build
 
       - name: Run CI Checks
         run: composer ci:check
 
-      - name: Verify core PHP syntax
+      - name: Verify FSP PHP syntax
         run: |
           php -l app/Http/Controllers/JuryDemoController.php
           php -l app/Http/Controllers/EmployerJobsController.php
           php -l app/Http/Controllers/CandidateSettingsController.php
+          php -l app/Http/Controllers/ComparisonController.php
+          php -l app/Http/Controllers/InteractionController.php
+          php -l app/Services/Fsp/AnalyticsService.php
           php -l app/Services/Fsp/MatchEngine.php
           php -l app/Services/Fsp/LiveAssessmentService.php
           php -l routes/web.php
