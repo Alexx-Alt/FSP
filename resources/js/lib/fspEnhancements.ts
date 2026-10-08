@@ -12,6 +12,8 @@ function applyTheme(theme:'light'|'dark'){
     localStorage.setItem(THEME_KEY,theme);
     document.cookie=`appearance=${theme};path=/;max-age=31536000;SameSite=Lax`;
     document.documentElement.classList.toggle('dark',theme==='dark');
+    document.documentElement.dataset.theme=theme==='dark'?'midnight':'light';
+    document.documentElement.style.colorScheme=theme;
     document.querySelectorAll<HTMLButtonElement>('.fsp-theme-toggle').forEach(b=>{
         if(b.dataset.theme===theme)return;
         b.dataset.theme=theme;
@@ -30,7 +32,8 @@ function enhanceTheme(){
         if(selector==='.topbar-inner'){const role=host.querySelector('.role');host.insertBefore(b,role??host.lastElementChild);}else host.insertBefore(b,host.firstChild);
     });}
     if(!document.querySelector('.fsp-theme-toggle')&&document.body){const b=themeButton(true);b.classList.add('floating');document.body.appendChild(b);}
-    applyTheme(isDark()?'dark':'light');
+    const saved=localStorage.getItem(THEME_KEY);
+    applyTheme(saved==='dark'||saved==='light'?saved:(isDark()?'dark':'light'));
 }
 function stateOf(a:HTMLElement):State{return a.classList.contains('confirmed')?'confirmed':a.classList.contains('partial')?'partial':a.classList.contains('claimed')?'claimed':'unknown';}
 function hash(s:string){let h=2166136261;for(const c of s){h^=c.charCodeAt(0);h=Math.imul(h,16777619);}return h>>>0;}
