@@ -106,20 +106,21 @@ class MatchEngine
     }
 
     /** @return array<int, array<string, mixed>> */
-    public function topJobsForCandidate(int $candidateId, int $limit = 5): array
+    public function topJobsForCandidate(int $candidateId, int $limit = 24): array
     {
         return DB::table('jobs')
             ->where('status', 'open')
             ->pluck('job_id')
-            ->map(fn ($jobId) => $this->enrichWithJob($this->compare($candidateId, (int) $jobId)))
+            ->map(fn ($jobId) => $this->compare($candidateId, (int) $jobId))
             ->sortByDesc('score')
             ->take($limit)
+            ->map(fn ($result) => $this->enrichWithJob($result))
             ->values()
             ->all();
     }
 
     /** @return array<int, array<string, mixed>> */
-    public function topCandidatesForEmployer(int $employerId, int $limit = 8): array
+    public function topCandidatesForEmployer(int $employerId, int $limit = 24): array
     {
         $jobIds = DB::table('jobs')->where('employer_id', $employerId)->where('status', 'open')->pluck('job_id');
         if ($jobIds->isEmpty()) {
@@ -130,11 +131,17 @@ class MatchEngine
         $rows = collect();
         foreach ($candidateIds as $candidateId) {
             foreach ($jobIds as $jobId) {
-                $rows->push($this->enrichWithCandidate($this->compare((int) $candidateId, (int) $jobId)));
+                $rows->push($this->compare((int) $candidateId, (int) $jobId));
             }
         }
 
-        return $rows->sortByDesc('score')->unique(fn ($row) => $row['candidateId'])->take($limit)->values()->all();
+        return $rows
+            ->sortByDesc('score')
+            ->unique(fn ($row) => $row['candidateId'])
+            ->take($limit)
+            ->map(fn ($row) => $this->enrichWithCandidate($row))
+            ->values()
+            ->all();
     }
 
     /** @param array<string, mixed> $result */
@@ -143,17 +150,34 @@ class MatchEngine
         $job = DB::table('jobs')
             ->leftJoin('companies', 'companies.company_id', '=', 'jobs.company_id')
             ->where('jobs.job_id', $result['jobId'])
-            ->select('jobs.*', 'companies.name as company_name')
+            ->select(
+                'jobs.*',
+                'companies.name as company_name',
+                'companies.industry as company_industry',
+                'companies.size_band as company_size',
+                'companies.hiring_quality_score as company_quality',
+                'companies.avg_response_hours as company_response_hours',
+                'companies.acceptance_rate as company_acceptance_rate'
+            )
             ->first();
 
         return [
             ...$result,
             'title' => $job?->title,
+            'description' => $job?->description,
+            'companyId' => $job?->company_id === null ? null : (int) $job->company_id,
             'company' => $job?->company_name ?? $job?->company,
+            'companyIndustry' => $job?->company_industry,
+            'companySize' => $job?->company_size,
+            'companyQuality' => $job?->company_quality === null ? null : (float) $job->company_quality,
+            'companyResponseHours' => $job?->company_response_hours === null ? null : (float) $job->company_response_hours,
+            'companyAcceptanceRate' => $job?->company_acceptance_rate === null ? null : (float) $job->company_acceptance_rate,
             'city' => $job?->location,
             'grade' => $job?->grade_required,
             'salaryMin' => $job?->salary_min,
             'salaryMax' => $job?->salary_max,
+            'workFormat' => $job?->work_format,
+            'requiredSkills' => $this->csv($job?->skills),
         ];
     }
 
@@ -163,14 +187,45 @@ class MatchEngine
         $candidate = DB::table('users')->where('user_id', $result['candidateId'])->first();
         $job = DB::table('jobs')->where('job_id', $result['jobId'])->first();
 
+        if (! $candidate) {
+            return $result;
+        }
+
+        $assessment = DB::table('assessment_runs')
+            ->where('candidate_id', $candidate->user_id)
+            ->orderByDesc('completed_at')
+            ->first();
+
+        $confirmedSkills = DB::table('candidate_skill_evidence')
+            ->where('candidate_id', $candidate->user_id)
+            ->where('state', 'confirmed')
+            ->count();
+
+        $fspEvidence = DB::table('fsp_achievements')
+            ->where('candidate_id', $candidate->user_id)
+            ->where('verified', true)
+            ->count();
+
         return [
             ...$result,
-            'candidateName' => $candidate?->username,
-            'headline' => $candidate?->headline,
-            'city' => $candidate?->city,
-            'confirmedGrade' => $candidate?->confirmed_grade,
-            'gradeStatus' => $candidate?->grade_status,
+            'candidateName' => $candidate->username,
+            'headline' => $candidate->headline,
+            'bio' => $candidate->bio,
+            'skills' => $candidate->skills,
+            'city' => $candidate->city,
+            'category' => $candidate->primary_category,
+            'desiredGrade' => $candidate->desired_grade,
+            'confirmedGrade' => $candidate->confirmed_grade,
+            'gradeStatus' => $candidate->grade_status,
+            'salaryExpected' => $candidate->salary_expected === null ? null : (int) $candidate->salary_expected,
+            'workFormat' => $candidate->work_format,
+            'assessmentScore' => $assessment?->score === null ? null : (float) $assessment->score,
+            'integrityScore' => $assessment?->integrity_score === null ? null : (float) $assessment->integrity_score,
+            'confirmedSkills' => (int) $confirmedSkills,
+            'fspEvidence' => (int) $fspEvidence,
             'jobTitle' => $job?->title,
+            'jobGrade' => $job?->grade_required,
+            'jobLocation' => $job?->location,
         ];
     }
 
