@@ -15,7 +15,7 @@ function role(): string | null {
 }
 
 function addLink(host: HTMLElement, href: string, text: string, key: string): void {
-    if (host.querySelector(`[data-fsp-nav="${key}"]`)) return;
+    if (host.querySelector(`[data-fsp-nav="${key}"]`) || host.querySelector(`a[href="${href}"]`)) return;
     const a = document.createElement('a');
     a.href = href;
     a.dataset.fspNav = key;
@@ -30,15 +30,9 @@ function enhance(): void {
     if (!currentRole) return;
     const navs = document.querySelectorAll<HTMLElement>('.candidate-topbar nav,.topbar nav,.employer-jobs-top nav');
     navs.forEach((nav) => {
-        if (currentRole === 'applicant') {
-            addLink(nav, '/candidate/settings', 'Приватность', 'candidate-settings');
-        }
-        if (currentRole === 'employer') {
-            addLink(nav, '/employer/jobs', 'Вакансии', 'employer-jobs');
-        }
-        if (currentRole === 'admin') {
-            addLink(nav, '/jury-demo', 'Jury Demo', 'jury-demo');
-        }
+        if (currentRole === 'applicant') addLink(nav, '/candidate/settings', 'Приватность', 'candidate-settings');
+        if (currentRole === 'employer') addLink(nav, '/employer/jobs', 'Вакансии', 'employer-jobs');
+        if (currentRole === 'admin') addLink(nav, '/jury-demo', 'Jury Demo', 'jury-demo');
     });
 }
 
