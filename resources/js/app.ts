@@ -4,8 +4,13 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import AuthLayout from '@/layouts/AuthLayout.vue';
 import SettingsLayout from '@/layouts/settings/Layout.vue';
 import { initializeFlashToast } from '@/lib/flashToast';
+import { installFspEnhancements } from '@/lib/fspEnhancements';
+import '../css/fsp-enhancements.css';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
+
+// Apply the saved light/dark preference before custom FSP pages are mounted.
+initializeTheme();
 
 void createInertiaApp({
     title: (title) => (title ? `${title} - ${appName}` : appName),
@@ -33,5 +38,5 @@ void createInertiaApp({
     },
 });
 
-initializeTheme();
 initializeFlashToast();
+installFspEnhancements();
