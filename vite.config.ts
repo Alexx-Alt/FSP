@@ -10,7 +10,9 @@ export default defineConfig({
     plugins: lazyPlugins(() => [
         laravel({
             input: ['resources/css/app.css', 'resources/js/app.ts'],
-            refresh: true,
+            // Inertia/Vue already uses HMR for frontend files. Full-page refresh
+            // can cause a reload loop when route/code generation tools touch files.
+            refresh: false,
             fonts: [
                 bunny('Instrument Sans', {
                     weights: [400, 500, 600],
@@ -39,6 +41,8 @@ export default defineConfig({
                 '**/.cursor/**',
                 '**/.junie/**',
                 '**/vendor/**',
+                '**/storage/**',
+                '**/bootstrap/cache/**',
             ],
         },
     },
