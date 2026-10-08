@@ -46,72 +46,63 @@ class JuryDemoController extends Controller
                 ->first()
             : null;
 
-        $routeDistribution = [];
-        if ($has('jobs') && $has('users')) {
-            $routeDistribution = [
-                ['route' => 'invite', 'label' => 'Высокое соответствие', 'note' => 'Совпали категория, грейд и большая часть обязательного стека.'],
-                ['route' => 'clarify', 'label' => 'Нужно уточнить', 'note' => 'Сильная база, но есть один существенный gap или неполный evidence.'],
-                ['route' => 'perspective', 'label' => 'Перспектива', 'note' => 'Есть потенциал, однако нужен дополнительный шаг проверки.'],
-                ['route' => 'observe', 'label' => 'Наблюдать', 'note' => 'Есть критичное несовпадение по категории, грейду или обязательному стеку.'],
-            ];
-        }
+        $routeDistribution = $has('jobs') && $has('users') ? [
+            ['route' => 'invite', 'label' => 'Высокое соответствие', 'note' => 'Совпали категория, грейд и большая часть обязательного стека.'],
+            ['route' => 'clarify', 'label' => 'Нужно уточнить', 'note' => 'Сильная база, но есть один существенный gap или неполный evidence.'],
+            ['route' => 'perspective', 'label' => 'Перспектива', 'note' => 'Есть потенциал, однако нужен дополнительный шаг проверки.'],
+            ['route' => 'observe', 'label' => 'Наблюдать', 'note' => 'Есть критичное несовпадение по категории, грейду или обязательному стеку.'],
+        ] : [];
 
+        // Веса полностью повторяют раздел 6 официального ТЗ ФСП (35/25/10/7/6/7/10).
         $criteria = [
             [
-                'key' => 'qualification',
-                'title' => 'Квалификационный тест и грейд',
-                'status' => $has('assessment_runs') && $has('assessment_questions'),
-                'weight' => 18,
-                'proof' => 'Грейд подтверждается только assessment; FSP evidence не назначает грейд.',
-            ],
-            [
                 'key' => 'matching',
-                'title' => 'Объяснимый подбор',
-                'status' => $has('jobs') && $has('candidate_skill_evidence'),
-                'weight' => 22,
-                'proof' => 'Match раскладывается на категорию, грейд, стек, зарплату, формат и gaps.',
+                'title' => 'Новая механика подбора',
+                'status' => $has('jobs') && $has('candidate_skill_evidence') && $has('interaction_cases'),
+                'weight' => 35,
+                'proof' => 'Explainable Match ранжирует по подтверждённой категории/грейду, стеку, зарплате и формату, показывает reasons/gaps и ведёт к адресному контакту.',
             ],
             [
-                'key' => 'invite',
-                'title' => 'Адресное приглашение и отклик',
-                'status' => $has('interaction_cases') && $has('case_events'),
-                'weight' => 14,
-                'proof' => 'Самостоятельный отклик и адресное приглашение сходятся в единый Process Center.',
+                'key' => 'testing',
+                'title' => 'Тестирование, валидация и категоризация',
+                'status' => $has('assessment_runs') && $has('assessment_questions') && $has('assessment_integrity_events'),
+                'weight' => 25,
+                'proof' => 'Варианты банка, вопросы по одному, практическая задача, integrity-сигналы, code similarity, retest_of и измерение стабильности грейда.',
             ],
             [
-                'key' => 'evidence',
-                'title' => 'Древо знаний и evidence',
-                'status' => $has('skill_nodes') && $has('candidate_skill_evidence'),
-                'weight' => 12,
-                'proof' => 'Поддерживаются confirmed / partial / claimed / unknown и граф компетенций.',
-            ],
-            [
-                'key' => 'analytics',
-                'title' => '3-срезная аналитика',
-                'status' => $companyCount > 0 && $cityCount > 0,
-                'weight' => 12,
-                'proof' => 'Люди, компании и география доступны кандидату, работодателю и администратору.',
-            ],
-            [
-                'key' => 'validation',
-                'title' => 'Валидация и test-retest',
-                'status' => $has('assessment_runs') && (int) ($retests?->pairs ?? 0) > 0,
-                'weight' => 10,
-                'proof' => 'Сохраняются варианты теста, retest_of, score delta и стабильность результата.',
-            ],
-            [
-                'key' => 'fsp',
-                'title' => 'FSP ID / Keycloak ready',
-                'status' => $has('fsp_achievements'),
-                'weight' => 6,
-                'proof' => 'Есть mock-слой достижений и скелет интеграции без зависимости основного алгоритма.',
-            ],
-            [
-                'key' => 'cpu',
-                'title' => 'Работа без GPU',
+                'key' => 'ux',
+                'title' => 'Удобство и интуитивность интерфейса',
                 'status' => true,
+                'weight' => 10,
+                'proof' => 'Ролевые кабинеты, Today/Focus, light/dark, фильтры, сравнения, понятные маршруты Match, адаптивные экраны и контекстная помощь.',
+            ],
+            [
+                'key' => 'technical',
+                'title' => 'Техническая проработка',
+                'status' => true,
+                'weight' => 7,
+                'proof' => 'Laravel/Vue/TypeScript/MySQL, разделение UI/business/data, OpenAPI, Docker-ready контур и критический путь без GPU/обязательного LLM.',
+            ],
+            [
+                'key' => 'completeness',
+                'title' => 'Полнота реализации и документация',
+                'status' => $candidateCount > 0 && $employerCount > 0 && $companyCount > 0,
                 'weight' => 6,
-                'proof' => 'Критический путь реализован детерминированно на PHP/MySQL; LLM не обязателен.',
+                'proof' => 'Оба кабинета, профиль без FSP-истории, FSP ID stub, инструкция запуска, архитектура, тестирование, matching, validation и API описаны в репозитории.',
+            ],
+            [
+                'key' => 'extras',
+                'title' => 'Дополнительный функционал',
+                'status' => $has('jobs') && $has('interaction_cases') && $has('case_tasks'),
+                'weight' => 7,
+                'proof' => 'Самостоятельный отклик, CRUD вакансий, gap/case tasks, Process Center, privacy/trust layer, сравнение компаний и кандидатов, мобильная адаптация.',
+            ],
+            [
+                'key' => 'pitch',
+                'title' => 'Презентация и выступление',
+                'status' => true,
+                'weight' => 10,
+                'proof' => 'Jury Demo даёт 7–10 минутный сценарий: assessment → categorization → employer search → explainable match → contact → validation/analytics.',
             ],
         ];
 
@@ -140,19 +131,19 @@ class JuryDemoController extends Controller
             'scenarios' => [
                 [
                     'title' => 'Кандидат заявляет Senior',
-                    'steps' => ['Выбирает категорию и желаемый грейд', 'Проходит live assessment', 'Integrity-сигналы учитываются отдельно', 'Грейд меняется только результатом assessment'],
+                    'steps' => ['Заполняет профиль и выбирает категорию/желаемый грейд', 'Проходит live assessment по одному вопросу', 'Практическая задача и integrity учитываются отдельно', 'Только assessment подтверждает или не подтверждает грейд'],
                 ],
                 [
-                    'title' => 'Работодатель ищет Backend Senior',
-                    'steps' => ['Система ранжирует кандидатов', 'Показывает причины и gaps', 'Работодатель сравнивает shortlist', 'Адресное приглашение создаёт кейс найма'],
+                    'title' => 'Работодатель описывает потребность',
+                    'steps' => ['Создаёт вакансию с обязательной зарплатой', 'Указывает категорию, грейд, стек и формат', 'Получает ранжированную подборку', 'Открывает причины и gaps по каждому кандидату'],
                 ],
                 [
-                    'title' => 'Взаимный шаг и процесс',
-                    'steps' => ['Кандидат принимает приглашение', 'Контакты открываются после принятия', 'Несколько ЛПР ведут задачи и комментарии', 'Вся история остаётся в case_events'],
+                    'title' => 'Контакт и Process Center',
+                    'steps' => ['Работодатель отправляет адресное приглашение или кандидат откликается', 'Взаимный шаг открывает контакты', 'Несколько ЛПР ведут задачи и комментарии', 'Статусы и история сохраняются в case_events'],
                 ],
                 [
                     'title' => 'Проверка качества системы',
-                    'steps' => ['Админ видит города и компании', 'Смотрит test-retest стабильность', 'Проверяет integrity-review', 'Валидация воспроизводится на синтетических профилях'],
+                    'steps' => ['Админ показывает test-retest и integrity', 'Сравнивает людей, компании и города', 'Показывает воспроизводимую логику Match', 'Жюри может повторить путь на синтетических профилях'],
                 ],
             ],
         ]);
