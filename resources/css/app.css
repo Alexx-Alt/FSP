@@ -2,18 +2,10 @@
 
 @import 'tw-animate-css';
 
-
-
-
-
-
 /*
   The default border color has changed to `currentColor` in Tailwind CSS v4,
   so we've added these compatibility styles to make sure everything still
   looks the same as it did with Tailwind CSS v3.
-
-  If we ever want to remove these styles, we need to add an explicit border
-  color utility to any element that depends on these defaults.
 */
 @layer base {
     *,
@@ -109,5 +101,24 @@
 }
 
 @layer base {
-  
 }
+
+/* FSP v6 scale pass: старый workspace был слишком мелким на обычных 1080p/1440p экранах. */
+.fsp-shell{font-size:16px!important}
+.fsp-shell .container{width:min(calc(100% - 48px),1380px)!important;padding-top:46px!important}
+.fsp-shell .topbar-inner{width:min(calc(100% - 48px),1480px)!important;min-height:82px!important}
+.fsp-shell .topbar nav button{font-size:12px!important;padding:11px 13px!important}
+.fsp-shell .role{font-size:11px!important}.fsp-shell .brand strong{font-size:16px!important}.fsp-shell .brand small{font-size:10px!important}
+.fsp-shell .hero p,.fsp-shell .intro p{font-size:13px!important}.fsp-shell .eyebrow{font-size:10px!important}
+.fsp-shell .card{padding:26px!important}.fsp-shell .card h2{font-size:24px!important}.fsp-shell .card>p{font-size:12px!important}
+.fsp-shell .kpis>div{padding:20px!important;min-height:128px!important}.fsp-shell .kpis span{font-size:10px!important}.fsp-shell .kpis small{font-size:10px!important}
+.fsp-shell .matches h3,.fsp-shell .candidate h3{font-size:13px!important}.fsp-shell .matches p,.fsp-shell .candidate p{font-size:10px!important}.fsp-shell .route{font-size:9px!important}
+.fsp-shell .axes span{font-size:9px!important}.fsp-shell .axes b{font-size:10px!important}.fsp-shell .matches article>small{font-size:9px!important}
+.fsp-shell .timeline b,.fsp-shell .queue b{font-size:11px!important}.fsp-shell .timeline small,.fsp-shell .queue small{font-size:9px!important}
+.fsp-shell .evidence b{font-size:11px!important}.fsp-shell .evidence small{font-size:9px!important}.fsp-shell .evidence span{font-size:8px!important}
+.fsp-shell .bar-row span{font-size:10px!important}.fsp-shell .bar-row strong{font-size:9px!important}
+.fsp-shell table th{font-size:9px!important}.fsp-shell table td{font-size:10px!important;padding:10px 11px!important}
+.fsp-shell .city-grid header b{font-size:11px!important}.fsp-shell .city-grid article>div span{font-size:8.5px!important}.fsp-shell .city-grid article>small{font-size:8px!important}
+.fsp-shell .case{padding:20px!important}.fsp-shell .case h3{font-size:15px!important}.fsp-shell .case>header p{font-size:10px!important}.fsp-shell .status{font-size:8px!important}
+.fsp-shell .case-grid h4{font-size:11px!important}.fsp-shell .task b{font-size:10px!important}.fsp-shell .task small{font-size:8.5px!important}.fsp-shell .audit b{font-size:10px!important}.fsp-shell .audit p{font-size:9px!important}
+@media(max-width:700px){.fsp-shell .container,.fsp-shell .topbar-inner{width:min(calc(100% - 26px),1380px)!important}}
