@@ -31,7 +31,7 @@ class LiveAssessmentService
         $choices = DB::table('assessment_questions')
             ->where('category', $category)
             ->where('active', true)
-            ->orderByRaw('ABS(difficulty - ?) ASC', [$preferredDifficulty])
+            ->orderByRaw('ABS(CAST(difficulty AS SIGNED) - ?) ASC', [$preferredDifficulty])
             ->orderByRaw('RAND()')
             ->limit(5)
             ->get();
@@ -47,17 +47,19 @@ class LiveAssessmentService
             ? DB::table('assessment_code_questions')
                 ->where('category', $category)
                 ->where('active', true)
-                ->orderByRaw('ABS(difficulty - ?) ASC', [$preferredDifficulty])
+                ->orderByRaw('ABS(CAST(difficulty AS SIGNED) - ?) ASC', [$preferredDifficulty])
                 ->inRandomOrder()
                 ->first()
             : null;
 
-        // В demo тест не должен падать 503 только из-за того, что дополнительный SQL ещё не применили.
-        // В таком случае live-session хранится во file session, а практическая задача берётся из встроенного blueprint.
+        // Если практический банк ещё не заполнен, используем встроенное задание и file-session.
+        // Так submit() потом не пытается искать fallback-вопрос по несуществующему ID в БД.
+        $usingFallbackCode = $code === null;
         $code ??= $this->fallbackCodeQuestion($category);
+        $persistSession = $persistentLive && ! $usingFallbackCode;
 
         $variant = 'live-'.Str::lower(Str::random(8)).'-'.now()->format('YmdHis');
-        if ($persistentLive) {
+        if ($persistSession) {
             $sessionId = (int) DB::table('assessment_live_sessions')->insertGetId([
                 'candidate_id' => $user->getKey(),
                 'category' => $category,
@@ -112,7 +114,7 @@ class LiveAssessmentService
             'variant' => $variant,
             'durationSeconds' => 15 * 60,
             'questions' => $questions,
-            'persistentIntegrity' => $persistentLive,
+            'persistentIntegrity' => $persistSession,
             'rules' => [
                 'Вопросы выдаются по одному.',
                 'Смена вкладки, потеря фокуса, copy/paste и выход из полноэкранного режима фиксируются как сигналы.',
@@ -398,7 +400,7 @@ class LiveAssessmentService
     private function fallbackCodeQuestion(string $category): object
     {
         $rows = [
-            'Backend' => [900001, 'Idempotency', 'Практика: dedupeLatest', 'Напишите PHP-функцию dedupeLatest(items), которая за O(n) оставляет для каждого id объект с самым свежим updated_at.', 'php', "function dedupeLatest(array $items): array {\n    // your code\n}", ['min_chars' => 80, 'required_groups' => [['foreach'], ['updated_at'], ['id'], ['return']]], 4],
+            'Backend' => [900001, 'Idempotency', 'Практика: dedupeLatest', 'Напишите PHP-функцию dedupeLatest(items), которая за O(n) оставляет для каждого id объект с самым свежим updated_at.', 'php', "function dedupeLatest(array \$items): array {\n    // your code\n}", ['min_chars' => 80, 'required_groups' => [['foreach'], ['updated_at'], ['id'], ['return']]], 4],
             'Frontend' => [900002, 'TypeScript', 'Практика: groupBy', 'Реализуйте TypeScript-функцию groupBy<T>(items, key), возвращающую Record<string, T[]> без мутации входного массива.', 'typescript', "function groupBy<T>(items: T[], key: (item: T) => string): Record<string, T[]> {\n  // your code\n}", ['min_chars' => 90, 'required_groups' => [['Record'], ['forEach', 'reduce', 'for ('], ['key('], ['return']]], 4],
             'Data' => [900003, 'SQL', 'Практика: latest row', 'Напишите SQL-запрос, который оставляет только последнюю запись по customer_id, используя ROW_NUMBER() и created_at.', 'sql', "WITH ranked AS (\n  SELECT\n)", ['min_chars' => 70, 'required_groups' => [['row_number'], ['partition by'], ['customer_id'], ['order by'], ['created_at']]], 4],
             'ML/AI' => [900004, 'Validation', 'Практика: temporal split', 'Опишите псевдокод временного train/validation/test split так, чтобы будущее не попадало в train.', 'python', '# timestamps are already parsed', ['min_chars' => 100, 'required_groups' => [['train'], ['validation', 'val'], ['test'], ['time', 'date', 'timestamp']]], 4],
