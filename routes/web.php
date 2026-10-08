@@ -2,8 +2,10 @@
 
 use App\Http\Controllers\ApplicationDecisionController;
 use App\Http\Controllers\CandidateController;
+use App\Http\Controllers\ComparisonController;
 use App\Http\Controllers\InteractionController;
 use App\Http\Controllers\LiveAssessmentController;
+use App\Http\Controllers\ProcessFeedbackController;
 use App\Http\Controllers\WorkspaceController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -47,11 +49,15 @@ Route::middleware('auth')->group(function () {
     Route::post('/interactions/jobs/{job}/candidates/{candidate}/invite', [InteractionController::class, 'invite'])->whereNumber('job')->whereNumber('candidate')->name('interactions.invite');
     Route::post('/interactions/cases/{case}/accept-application', [ApplicationDecisionController::class, 'accept'])->whereNumber('case')->name('interactions.application.accept');
 
+    Route::get('/compare/candidate/companies', [ComparisonController::class, 'companies'])->name('compare.candidate.companies');
+    Route::get('/compare/employer/candidates', [ComparisonController::class, 'candidates'])->name('compare.employer.candidates');
+
     Route::get('/workspace', [WorkspaceController::class, 'show'])->name('workspace');
 
     Route::post('/workspace/cases/{case}/comments', [WorkspaceController::class, 'comment'])->whereNumber('case')->name('workspace.cases.comments');
     Route::post('/workspace/cases/{case}/tasks', [WorkspaceController::class, 'addTask'])->whereNumber('case')->name('workspace.cases.tasks');
     Route::post('/workspace/cases/{case}/respond', [WorkspaceController::class, 'respondInvitation'])->whereNumber('case')->name('workspace.cases.respond');
+    Route::post('/workspace/cases/{case}/feedback', [ProcessFeedbackController::class, 'store'])->whereNumber('case')->name('workspace.cases.feedback');
     Route::patch('/workspace/cases/{case}/tasks/{task}', [WorkspaceController::class, 'updateTask'])->whereNumber('case')->whereNumber('task')->name('workspace.cases.tasks.update');
     Route::patch('/workspace/cases/{case}/status', [WorkspaceController::class, 'updateStatus'])->whereNumber('case')->name('workspace.cases.status');
 
