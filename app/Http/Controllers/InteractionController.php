@@ -14,6 +14,8 @@ class InteractionController extends Controller
         /** @var User $user */
         $user = $request->user();
         abort_unless($user->role === 'applicant', 403);
+        $data = $request->validate(['message' => ['nullable', 'string', 'max:1500']]);
+        $message = trim((string) ($data['message'] ?? ''));
 
         $jobRow = DB::table('jobs')->where('job_id', $job)->where('status', 'open')->first();
         abort_unless($jobRow, 404);
@@ -28,7 +30,7 @@ class InteractionController extends Controller
             return back()->with('info', 'Отклик уже находится в процессе.');
         }
 
-        DB::transaction(function () use ($user, $jobRow, $existing) {
+        DB::transaction(function () use ($user, $jobRow, $existing, $message) {
             $caseId = DB::table('interaction_cases')->insertGetId([
                 'candidate_id' => $user->getKey(),
                 'company_id' => $jobRow->company_id,
@@ -54,10 +56,20 @@ class InteractionController extends Controller
                 'actor_user_id' => $user->getKey(),
                 'event_type' => $existing ? 'application_reopened' : 'self_application',
                 'title' => $existing ? 'Кандидат повторно открыл интерес к вакансии' : 'Кандидат откликнулся на вакансию',
-                'details' => $jobRow->title,
-                'metadata' => json_encode(['job_id' => $jobRow->job_id], JSON_UNESCAPED_UNICODE),
+                'details' => $message !== '' ? $message : $jobRow->title,
+                'metadata' => json_encode(['job_id' => $jobRow->job_id, 'has_message' => $message !== ''], JSON_UNESCAPED_UNICODE),
                 'created_at' => now(),
             ]);
+
+            if ($message !== '') {
+                DB::table('case_comments')->insert([
+                    'case_id' => $caseId,
+                    'user_id' => $user->getKey(),
+                    'body' => '[Сопроводительное сообщение] '.$message,
+                    'is_internal' => false,
+                    'created_at' => now(),
+                ]);
+            }
 
             DB::table('interaction_alerts')->insert([
                 'user_id' => $jobRow->employer_id,
@@ -78,6 +90,8 @@ class InteractionController extends Controller
         /** @var User $user */
         $user = $request->user();
         abort_unless($user->role === 'employer', 403);
+        $data = $request->validate(['message' => ['nullable', 'string', 'max:1500']]);
+        $message = trim((string) ($data['message'] ?? ''));
 
         $jobRow = DB::table('jobs')->where('job_id', $job)->where('status', 'open')->first();
         abort_unless($jobRow, 404);
@@ -103,7 +117,7 @@ class InteractionController extends Controller
             return back()->with('info', 'С этим кандидатом уже есть активный процесс по вакансии.');
         }
 
-        DB::transaction(function () use ($user, $jobRow, $candidateRow, $existing) {
+        DB::transaction(function () use ($user, $jobRow, $candidateRow, $existing, $message) {
             $caseId = DB::table('interaction_cases')->insertGetId([
                 'candidate_id' => $candidateRow->user_id,
                 'company_id' => $jobRow->company_id,
@@ -129,10 +143,20 @@ class InteractionController extends Controller
                 'actor_user_id' => $user->getKey(),
                 'event_type' => 'match_invite',
                 'title' => 'Работодатель отправил адресное приглашение',
-                'details' => $jobRow->title,
-                'metadata' => json_encode(['job_id' => $jobRow->job_id], JSON_UNESCAPED_UNICODE),
+                'details' => $message !== '' ? $message : $jobRow->title,
+                'metadata' => json_encode(['job_id' => $jobRow->job_id, 'has_message' => $message !== ''], JSON_UNESCAPED_UNICODE),
                 'created_at' => now(),
             ]);
+
+            if ($message !== '') {
+                DB::table('case_comments')->insert([
+                    'case_id' => $caseId,
+                    'user_id' => $user->getKey(),
+                    'body' => '[Сообщение к приглашению] '.$message,
+                    'is_internal' => false,
+                    'created_at' => now(),
+                ]);
+            }
 
             DB::table('interaction_alerts')->insert([
                 'user_id' => $candidateRow->user_id,
