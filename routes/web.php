@@ -4,6 +4,7 @@ use App\Http\Controllers\ApplicationDecisionController;
 use App\Http\Controllers\CandidateController;
 use App\Http\Controllers\ComparisonController;
 use App\Http\Controllers\InteractionController;
+use App\Http\Controllers\JuryDemoController;
 use App\Http\Controllers\LiveAssessmentController;
 use App\Http\Controllers\ProcessFeedbackController;
 use App\Http\Controllers\WorkspaceController;
@@ -53,6 +54,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/compare/employer/candidates', [ComparisonController::class, 'candidates'])->name('compare.employer.candidates');
 
     Route::get('/workspace', [WorkspaceController::class, 'show'])->name('workspace');
+    Route::get('/jury-demo', [JuryDemoController::class, 'show'])->name('jury.demo');
 
     Route::post('/workspace/cases/{case}/comments', [WorkspaceController::class, 'comment'])->whereNumber('case')->name('workspace.cases.comments');
     Route::post('/workspace/cases/{case}/tasks', [WorkspaceController::class, 'addTask'])->whereNumber('case')->name('workspace.cases.tasks');
