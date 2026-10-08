@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -148,7 +149,7 @@ class EmployerJobsController extends Controller
         ]);
     }
 
-    /** @return array{id:?int,name:string,city:?string,quality:?float} */
+    /** @return array{id:?int,name:string,city:?string,quality:?float,verification:string,trust:?float} */
     private function company(User $user): array
     {
         $company = DB::table('company_members as m')
@@ -158,11 +159,22 @@ class EmployerJobsController extends Controller
             ->select('c.*')
             ->first();
 
+        $verification = 'legacy';
+        $trust = null;
+        if ($company && Schema::hasColumn('companies', 'verification_status')) {
+            $verification = (string) ($company->verification_status ?? 'unverified');
+        }
+        if ($company && Schema::hasColumn('companies', 'trust_score')) {
+            $trust = $company->trust_score === null ? null : (float) $company->trust_score;
+        }
+
         return [
             'id' => $company ? (int) $company->company_id : null,
             'name' => $company?->name ?? $user->company ?? 'Компания',
             'city' => $company?->city,
             'quality' => $company?->hiring_quality_score === null ? null : (float) $company->hiring_quality_score,
+            'verification' => $verification,
+            'trust' => $trust,
         ];
     }
 
