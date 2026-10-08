@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ApplicationDecisionController;
 use App\Http\Controllers\CandidateController;
+use App\Http\Controllers\CandidateSettingsController;
 use App\Http\Controllers\ComparisonController;
 use App\Http\Controllers\EmployerJobsController;
 use App\Http\Controllers\InteractionController;
@@ -42,6 +43,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/candidate/career', [CandidateController::class, 'saveCareer'])->name('candidate.career');
     Route::post('/candidate/assessment', [CandidateController::class, 'submitAssessment'])->name('candidate.assessment');
     Route::patch('/candidate/profile', [CandidateController::class, 'updateProfile'])->name('candidate.profile');
+    Route::get('/candidate/settings', [CandidateSettingsController::class, 'show'])->name('candidate.settings');
+    Route::patch('/candidate/settings', [CandidateSettingsController::class, 'update'])->name('candidate.settings.update');
 
     Route::get('/candidate/assessment/session', [LiveAssessmentController::class, 'show'])->name('candidate.assessment.live');
     Route::post('/candidate/assessment/live/{session}/event', [LiveAssessmentController::class, 'event'])->whereNumber('session')->name('candidate.assessment.live.event');
