@@ -9,6 +9,7 @@ import { installFspInteractions } from '@/lib/fspInteractions';
 import { installFspProcessActions } from '@/lib/fspProcessActions';
 import '../css/fsp-enhancements.css';
 import '../css/fsp-v6-fixes.css';
+import '../css/fsp-process-actions.css';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
