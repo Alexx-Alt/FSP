@@ -18,14 +18,15 @@ class LiveAssessmentService
     {
         abort_unless($user->role === 'applicant', 403);
         abort_unless(
-            Schema::hasTable('assessment_live_sessions') && Schema::hasTable('assessment_code_questions'),
-            503,
-            'Сначала выполните database/fsp_match_v6/05_phase1_2_live_assessment.sql'
+            Schema::hasTable('assessment_questions'),
+            422,
+            'Банк вопросов не развёрнут. Выполните database/fsp_match_v6/04_phase1_candidate_center.sql.'
         );
 
         $category = in_array($user->primary_category, self::CATEGORIES, true) ? $user->primary_category : 'Backend';
         $grade = in_array($user->desired_grade, self::GRADES, true) ? $user->desired_grade : 'middle';
-        $preferredDifficulty = (array_search($grade, self::GRADES, true) ?: 2) + 1;
+        $rank = array_search($grade, self::GRADES, true);
+        $preferredDifficulty = ($rank === false ? 2 : $rank) + 1;
 
         $choices = DB::table('assessment_questions')
             ->where('category', $category)
@@ -35,26 +36,53 @@ class LiveAssessmentService
             ->limit(5)
             ->get();
 
-        abort_if($choices->count() < 5, 503, 'В банке недостаточно вопросов для выбранной категории.');
+        abort_if(
+            $choices->count() < 5,
+            422,
+            'Для выбранной категории пока недостаточно вопросов. Запустите Phase 1 seed банка заданий.'
+        );
 
-        $code = DB::table('assessment_code_questions')
-            ->where('category', $category)
-            ->where('active', true)
-            ->orderByRaw('ABS(difficulty - ?) ASC', [$preferredDifficulty])
-            ->inRandomOrder()
-            ->first();
+        $persistentLive = $this->liveSchemaReady();
+        $code = $persistentLive
+            ? DB::table('assessment_code_questions')
+                ->where('category', $category)
+                ->where('active', true)
+                ->orderByRaw('ABS(difficulty - ?) ASC', [$preferredDifficulty])
+                ->inRandomOrder()
+                ->first()
+            : null;
 
-        abort_unless($code, 503, 'Для категории нет практической задачи.');
+        // В demo тест не должен падать 503 только из-за того, что дополнительный SQL ещё не применили.
+        // В таком случае live-session хранится во file session, а практическая задача берётся из встроенного blueprint.
+        $code ??= $this->fallbackCodeQuestion($category);
 
         $variant = 'live-'.Str::lower(Str::random(8)).'-'.now()->format('YmdHis');
-        $sessionId = DB::table('assessment_live_sessions')->insertGetId([
-            'candidate_id' => $user->getKey(),
-            'category' => $category,
-            'desired_grade' => $grade,
-            'status' => 'created',
-            'variant_key' => $variant,
-            'created_at' => now(),
-        ]);
+        if ($persistentLive) {
+            $sessionId = (int) DB::table('assessment_live_sessions')->insertGetId([
+                'candidate_id' => $user->getKey(),
+                'category' => $category,
+                'desired_grade' => $grade,
+                'status' => 'created',
+                'variant_key' => $variant,
+                'created_at' => now(),
+            ]);
+        } else {
+            $sessionId = random_int(100000000, 999999999);
+            session()->put($this->fallbackSessionKey($sessionId), [
+                '_fallback' => true,
+                'live_session_id' => $sessionId,
+                'candidate_id' => (int) $user->getKey(),
+                'category' => $category,
+                'desired_grade' => $grade,
+                'status' => 'created',
+                'variant_key' => $variant,
+                'risk_score' => 0,
+                'started_at' => null,
+                'completed_at' => null,
+                'events' => [],
+                'code_question' => (array) $code,
+            ]);
+        }
 
         $questions = $choices->map(fn ($q) => [
             'kind' => 'choice',
@@ -84,11 +112,12 @@ class LiveAssessmentService
             'variant' => $variant,
             'durationSeconds' => 15 * 60,
             'questions' => $questions,
+            'persistentIntegrity' => $persistentLive,
             'rules' => [
                 'Вопросы выдаются по одному.',
                 'Смена вкладки, потеря фокуса, copy/paste и выход из полноэкранного режима фиксируются как сигналы.',
                 'Сигнал сам по себе не означает нарушение: спорные сессии отправляются на проверку.',
-                'Практическая задача оценивается отдельно и проверяется на подозрительное совпадение с прошлыми ответами.',
+                'Практическая задача оценивается отдельно и проверяется на подозрительное совпадение, когда Phase 1.2 schema доступна.',
             ],
         ];
     }
@@ -98,6 +127,22 @@ class LiveAssessmentService
     {
         $session = $this->session($user, $sessionId);
         abort_if($session->status === 'completed', 422, 'Сессия уже завершена.');
+
+        if (($session->_fallback ?? false) === true) {
+            $stored = session()->get($this->fallbackSessionKey($sessionId), []);
+            $stored['events'] ??= [];
+            $stored['events'][] = [
+                'event_type' => mb_substr($type, 0, 80),
+                'weight' => min(10, max(1, $weight)),
+                'metadata' => json_encode($metadata, JSON_UNESCAPED_UNICODE),
+                'created_at' => now()->toDateTimeString(),
+            ];
+            $stored['risk_score'] = min(100, (int) collect($stored['events'])->sum('weight'));
+            $stored['status'] = $stored['status'] === 'created' ? 'active' : $stored['status'];
+            $stored['started_at'] ??= now()->toDateTimeString();
+            session()->put($this->fallbackSessionKey($sessionId), $stored);
+            return;
+        }
 
         DB::table('assessment_live_events')->insert([
             'live_session_id' => $sessionId,
@@ -140,7 +185,9 @@ class LiveAssessmentService
 
         foreach ($choiceAnswers as $answer) {
             $q = $choiceBank->get((int) ($answer['question_id'] ?? 0));
-            if (! $q) continue;
+            if (! $q) {
+                continue;
+            }
             $selected = isset($answer['selected_index']) ? (int) $answer['selected_index'] : -1;
             $correct = $selected === (int) $q->correct_index;
             $weight = 1 + (((int) $q->difficulty - 1) * 0.18);
@@ -157,21 +204,28 @@ class LiveAssessmentService
 
         $choiceScore = $weightedTotal > 0 ? ($weightedCorrect / $weightedTotal) * 100 : 0;
 
-        $codeQuestion = DB::table('assessment_code_questions')
-            ->where('code_question_id', (int) ($codeAnswer['question_id'] ?? 0))
-            ->where('category', $session->category)
-            ->first();
-        abort_unless($codeQuestion, 422, 'Практическая задача не найдена.');
+        if (($session->_fallback ?? false) === true) {
+            $storedSession = session()->get($this->fallbackSessionKey($sessionId), []);
+            $codeQuestion = (object) ($storedSession['code_question'] ?? []);
+        } else {
+            $codeQuestion = DB::table('assessment_code_questions')
+                ->where('code_question_id', (int) ($codeAnswer['question_id'] ?? 0))
+                ->where('category', $session->category)
+                ->first();
+        }
+        abort_unless($codeQuestion && isset($codeQuestion->validator_json), 422, 'Практическая задача не найдена.');
 
         $code = trim((string) ($codeAnswer['code'] ?? ''));
-        $codeScore = $this->codeScore($codeQuestion->validator_json, $code);
-        $similarity = $this->maxSimilarity((int) $codeQuestion->code_question_id, $code);
+        $codeScore = $this->codeScore((string) $codeQuestion->validator_json, $code);
+        $similarity = (($session->_fallback ?? false) === false && Schema::hasTable('assessment_code_answers'))
+            ? $this->maxSimilarity((int) $codeQuestion->code_question_id, $code)
+            : 0.0;
         if ($similarity >= 88) {
             $this->recordEvent($user, $sessionId, 'code_similarity', 10, ['similarity' => $similarity]);
         }
 
         $finalScore = round(($choiceScore * 0.78) + ($codeScore * 0.22), 1);
-        $risk = min(100, (int) DB::table('assessment_live_events')->where('live_session_id', $sessionId)->sum('weight'));
+        $risk = min(100, $this->riskFor($sessionId));
         $integrityScore = max(50, 100 - min(50, $risk));
         $reviewRequired = $risk > 20 || $similarity >= 88;
         $threshold = $this->thresholdFor($session->desired_grade);
@@ -180,8 +234,9 @@ class LiveAssessmentService
         $latest = DB::table('assessment_runs')->where('candidate_id', $user->getKey())->orderByDesc('completed_at')->first();
         $cooldownUntil = $latest?->completed_at ? Carbon::parse($latest->completed_at)->addDays(30) : null;
         $locked = $cooldownUntil?->isFuture() ?? false;
+        $fallback = ($session->_fallback ?? false) === true;
 
-        $assessmentId = DB::transaction(function () use ($user, $session, $storedChoiceAnswers, $codeQuestion, $code, $codeScore, $similarity, $codeAnswer, $finalScore, $integrityScore, $latest, $passed, $reviewRequired, $locked, $skills) {
+        $assessmentId = DB::transaction(function () use ($user, $session, $sessionId, $storedChoiceAnswers, $codeQuestion, $code, $codeScore, $similarity, $codeAnswer, $finalScore, $integrityScore, $latest, $passed, $reviewRequired, $locked, $skills, $fallback) {
             $assessmentId = DB::table('assessment_runs')->insertGetId([
                 'candidate_id' => $user->getKey(),
                 'category' => $session->category,
@@ -195,7 +250,7 @@ class LiveAssessmentService
                 'retest_of' => $latest?->assessment_id,
             ]);
 
-            if ($storedChoiceAnswers) {
+            if ($storedChoiceAnswers && Schema::hasTable('assessment_answers')) {
                 DB::table('assessment_answers')->insert(array_map(fn ($row) => [
                     'assessment_id' => $assessmentId,
                     'question_id' => $row['question_id'],
@@ -206,29 +261,33 @@ class LiveAssessmentService
                 ], $storedChoiceAnswers));
             }
 
-            $normalized = $this->normalizeCode($code);
-            DB::table('assessment_code_answers')->insert([
-                'assessment_id' => $assessmentId,
-                'code_question_id' => $codeQuestion->code_question_id,
-                'candidate_id' => $user->getKey(),
-                'answer_text' => $code,
-                'normalized_hash' => hash('sha256', $normalized),
-                'score' => $codeScore,
-                'similarity_score' => $similarity,
-                'response_ms' => min(900000, max(0, (int) ($codeAnswer['response_ms'] ?? 0))),
-                'created_at' => now(),
-            ]);
-
-            $events = DB::table('assessment_live_events')->where('live_session_id', $session->live_session_id)->get();
-            if ($events->isNotEmpty()) {
-                DB::table('assessment_integrity_events')->insert($events->map(fn ($event) => [
-                    'candidate_id' => $user->getKey(),
+            if (! $fallback && Schema::hasTable('assessment_code_answers')) {
+                $normalized = $this->normalizeCode($code);
+                DB::table('assessment_code_answers')->insert([
                     'assessment_id' => $assessmentId,
-                    'event_type' => $event->event_type,
-                    'weight' => $event->weight,
-                    'metadata' => $event->metadata,
-                    'created_at' => $event->created_at,
-                ])->all());
+                    'code_question_id' => $codeQuestion->code_question_id,
+                    'candidate_id' => $user->getKey(),
+                    'answer_text' => $code,
+                    'normalized_hash' => hash('sha256', $normalized),
+                    'score' => $codeScore,
+                    'similarity_score' => $similarity,
+                    'response_ms' => min(900000, max(0, (int) ($codeAnswer['response_ms'] ?? 0))),
+                    'created_at' => now(),
+                ]);
+            }
+
+            if (Schema::hasTable('assessment_integrity_events')) {
+                $events = $this->eventsFor($sessionId);
+                if ($events) {
+                    DB::table('assessment_integrity_events')->insert(array_map(fn ($event) => [
+                        'candidate_id' => $user->getKey(),
+                        'assessment_id' => $assessmentId,
+                        'event_type' => $event['event_type'],
+                        'weight' => $event['weight'],
+                        'metadata' => $event['metadata'],
+                        'created_at' => $event['created_at'],
+                    ], $events));
+                }
             }
 
             foreach ($skills as $skill) {
@@ -247,14 +306,20 @@ class LiveAssessmentService
             }
             DB::table('users')->where('user_id', $user->getKey())->update($profile);
 
-            DB::table('assessment_live_sessions')->where('live_session_id', $session->live_session_id)->update([
-                'status' => 'completed',
-                'risk_score' => min(100, (int) DB::table('assessment_live_events')->where('live_session_id', $session->live_session_id)->sum('weight')),
-                'completed_at' => now(),
-            ]);
+            if (! $fallback && Schema::hasTable('assessment_live_sessions')) {
+                DB::table('assessment_live_sessions')->where('live_session_id', $session->live_session_id)->update([
+                    'status' => 'completed',
+                    'risk_score' => min(100, $this->riskFor($sessionId)),
+                    'completed_at' => now(),
+                ]);
+            }
 
             return $assessmentId;
         });
+
+        if ($fallback) {
+            session()->forget($this->fallbackSessionKey($sessionId));
+        }
 
         return [
             'assessmentId' => $assessmentId,
@@ -272,10 +337,87 @@ class LiveAssessmentService
 
     private function session(User $user, int $sessionId): object
     {
-        $session = DB::table('assessment_live_sessions')->where('live_session_id', $sessionId)->first();
-        abort_unless($session, 404);
-        abort_unless((int) $session->candidate_id === (int) $user->getKey(), 403);
-        return $session;
+        if (Schema::hasTable('assessment_live_sessions')) {
+            $session = DB::table('assessment_live_sessions')->where('live_session_id', $sessionId)->first();
+            if ($session) {
+                abort_unless((int) $session->candidate_id === (int) $user->getKey(), 403);
+                return $session;
+            }
+        }
+
+        $fallback = session()->get($this->fallbackSessionKey($sessionId));
+        abort_unless(is_array($fallback), 404, 'Live assessment session не найдена.');
+        abort_unless((int) ($fallback['candidate_id'] ?? 0) === (int) $user->getKey(), 403);
+        return (object) $fallback;
+    }
+
+    private function liveSchemaReady(): bool
+    {
+        return Schema::hasTable('assessment_live_sessions')
+            && Schema::hasTable('assessment_live_events')
+            && Schema::hasTable('assessment_code_questions')
+            && Schema::hasTable('assessment_code_answers');
+    }
+
+    private function fallbackSessionKey(int $sessionId): string
+    {
+        return 'fsp.live_assessment.'.$sessionId;
+    }
+
+    private function riskFor(int $sessionId): int
+    {
+        if (Schema::hasTable('assessment_live_events')) {
+            $exists = Schema::hasTable('assessment_live_sessions')
+                && DB::table('assessment_live_sessions')->where('live_session_id', $sessionId)->exists();
+            if ($exists) {
+                return (int) DB::table('assessment_live_events')->where('live_session_id', $sessionId)->sum('weight');
+            }
+        }
+
+        $stored = session()->get($this->fallbackSessionKey($sessionId), []);
+        return (int) collect($stored['events'] ?? [])->sum('weight');
+    }
+
+    /** @return array<int,array{event_type:string,weight:int,metadata:?string,created_at:mixed}> */
+    private function eventsFor(int $sessionId): array
+    {
+        if (Schema::hasTable('assessment_live_events') && Schema::hasTable('assessment_live_sessions')
+            && DB::table('assessment_live_sessions')->where('live_session_id', $sessionId)->exists()) {
+            return DB::table('assessment_live_events')->where('live_session_id', $sessionId)->get()->map(fn ($event) => [
+                'event_type' => $event->event_type,
+                'weight' => (int) $event->weight,
+                'metadata' => $event->metadata,
+                'created_at' => $event->created_at,
+            ])->all();
+        }
+
+        $stored = session()->get($this->fallbackSessionKey($sessionId), []);
+        return array_values($stored['events'] ?? []);
+    }
+
+    private function fallbackCodeQuestion(string $category): object
+    {
+        $rows = [
+            'Backend' => [900001, 'Idempotency', 'Практика: dedupeLatest', 'Напишите PHP-функцию dedupeLatest(items), которая за O(n) оставляет для каждого id объект с самым свежим updated_at.', 'php', "function dedupeLatest(array $items): array {\n    // your code\n}", ['min_chars' => 80, 'required_groups' => [['foreach'], ['updated_at'], ['id'], ['return']]], 4],
+            'Frontend' => [900002, 'TypeScript', 'Практика: groupBy', 'Реализуйте TypeScript-функцию groupBy<T>(items, key), возвращающую Record<string, T[]> без мутации входного массива.', 'typescript', "function groupBy<T>(items: T[], key: (item: T) => string): Record<string, T[]> {\n  // your code\n}", ['min_chars' => 90, 'required_groups' => [['Record'], ['forEach', 'reduce', 'for ('], ['key('], ['return']]], 4],
+            'Data' => [900003, 'SQL', 'Практика: latest row', 'Напишите SQL-запрос, который оставляет только последнюю запись по customer_id, используя ROW_NUMBER() и created_at.', 'sql', "WITH ranked AS (\n  SELECT\n)", ['min_chars' => 70, 'required_groups' => [['row_number'], ['partition by'], ['customer_id'], ['order by'], ['created_at']]], 4],
+            'ML/AI' => [900004, 'Validation', 'Практика: temporal split', 'Опишите псевдокод временного train/validation/test split так, чтобы будущее не попадало в train.', 'python', '# timestamps are already parsed', ['min_chars' => 100, 'required_groups' => [['train'], ['validation', 'val'], ['test'], ['time', 'date', 'timestamp']]], 4],
+            'DevOps' => [900005, 'CI/CD', 'Практика: safe deploy', 'Опишите YAML/псевдокод безопасного pipeline: build → tests → publish → deploy → health-check → rollback при ошибке.', 'yaml', "steps:\n", ['min_chars' => 100, 'required_groups' => [['build'], ['test'], ['deploy'], ['health', 'check'], ['rollback']]], 4],
+            'Full-stack' => [900006, 'Architecture', 'Практика: idempotent API', 'Напишите псевдокод обработчика POST /payments с idempotency key и защитой от двойного списания.', 'typescript', "async function createPayment(req) {\n", ['min_chars' => 110, 'required_groups' => [['idempot'], ['key'], ['payment'], ['return'], ['transaction', 'lock', 'unique']]], 4],
+        ];
+        $row = $rows[$category] ?? $rows['Backend'];
+
+        return (object) [
+            'code_question_id' => $row[0],
+            'category' => $category,
+            'skill_code' => $row[1],
+            'title' => $row[2],
+            'prompt' => $row[3],
+            'language' => $row[4],
+            'starter_code' => $row[5],
+            'validator_json' => json_encode($row[6], JSON_UNESCAPED_UNICODE),
+            'difficulty' => $row[7],
+        ];
     }
 
     private function codeScore(string $validatorJson, string $code): float
@@ -288,7 +430,10 @@ class LiveAssessmentService
         $hit = 0;
         foreach ($groups as $group) {
             foreach ((array) $group as $needle) {
-                if (str_contains($lower, mb_strtolower((string) $needle))) { $hit++; break; }
+                if (str_contains($lower, mb_strtolower((string) $needle))) {
+                    $hit++;
+                    break;
+                }
             }
         }
         $groupScore = count($groups) ? ($hit / count($groups)) * 65 : 65;
@@ -298,7 +443,9 @@ class LiveAssessmentService
     private function maxSimilarity(int $questionId, string $code): float
     {
         $normalized = $this->normalizeCode($code);
-        if (mb_strlen($normalized) < 30) return 0;
+        if (mb_strlen($normalized) < 30 || ! Schema::hasTable('assessment_code_answers')) {
+            return 0;
+        }
         $max = 0.0;
         foreach (DB::table('assessment_code_answers')->where('code_question_id', $questionId)->latest('code_answer_id')->limit(80)->pluck('answer_text') as $previous) {
             $a = preg_split('/\s+/', $normalized, -1, PREG_SPLIT_NO_EMPTY) ?: [];
@@ -325,11 +472,16 @@ class LiveAssessmentService
         $node = DB::table('skill_nodes')->where('category', $category)->where(function ($q) use ($skill) {
             $q->where('name', $skill)->orWhere('code', 'like', '%.'.$skill)->orWhere('code', 'like', '%'.$skill.'%');
         })->orderByDesc('parent_id')->first();
-        if (! $node) return;
+        if (! $node) {
+            return;
+        }
         $existing = DB::table('candidate_skill_evidence')->where('candidate_id', $user->getKey())->where('skill_node_id', $node->skill_node_id)->where('source_type', 'assessment')->first();
         $data = ['state' => $state, 'source_label' => $source, 'score' => $score, 'verified_at' => now()];
-        if ($existing) DB::table('candidate_skill_evidence')->where('evidence_id', $existing->evidence_id)->update($data);
-        else DB::table('candidate_skill_evidence')->insert(['candidate_id' => $user->getKey(), 'skill_node_id' => $node->skill_node_id, 'source_type' => 'assessment', 'created_at' => now(), ...$data]);
+        if ($existing) {
+            DB::table('candidate_skill_evidence')->where('evidence_id', $existing->evidence_id)->update($data);
+        } else {
+            DB::table('candidate_skill_evidence')->insert(['candidate_id' => $user->getKey(), 'skill_node_id' => $node->skill_node_id, 'source_type' => 'assessment', 'created_at' => now(), ...$data]);
+        }
     }
 
     private function thresholdFor(string $grade): int
