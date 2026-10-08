@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\Fsp\MatchEngine;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -10,6 +11,8 @@ use Inertia\Response;
 
 class JuryDemoController extends Controller
 {
+    public function __construct(private readonly MatchEngine $matchEngine) {}
+
     public function show(Request $request): Response
     {
         abort_unless($request->user()?->role === 'admin', 403);
@@ -46,6 +49,7 @@ class JuryDemoController extends Controller
                 ->first()
             : null;
 
+        $validation = $this->matchValidation();
         $routeDistribution = $has('jobs') && $has('users') ? [
             ['route' => 'invite', 'label' => 'Высокое соответствие', 'note' => 'Совпали категория, грейд и большая часть обязательного стека.'],
             ['route' => 'clarify', 'label' => 'Нужно уточнить', 'note' => 'Сильная база, но есть один существенный gap или неполный evidence.'],
@@ -56,52 +60,37 @@ class JuryDemoController extends Controller
         // Веса полностью повторяют раздел 6 официального ТЗ ФСП (35/25/10/7/6/7/10).
         $criteria = [
             [
-                'key' => 'matching',
-                'title' => 'Новая механика подбора',
-                'status' => $has('jobs') && $has('candidate_skill_evidence') && $has('interaction_cases'),
+                'key' => 'matching', 'title' => 'Новая механика подбора',
+                'status' => $has('jobs') && $has('candidate_skill_evidence') && $has('interaction_cases') && ($validation['pairs'] ?? 0) > 0,
                 'weight' => 35,
-                'proof' => 'Explainable Match ранжирует по подтверждённой категории/грейду, стеку, зарплате и формату, показывает reasons/gaps и ведёт к адресному контакту.',
+                'proof' => 'Explainable Match ранжирует по подтверждённой категории/грейду, стеку, зарплате и формату, показывает reasons/gaps и проверяется на размеченных парах.',
             ],
             [
-                'key' => 'testing',
-                'title' => 'Тестирование, валидация и категоризация',
+                'key' => 'testing', 'title' => 'Тестирование, валидация и категоризация',
                 'status' => $has('assessment_runs') && $has('assessment_questions') && $has('assessment_integrity_events'),
                 'weight' => 25,
                 'proof' => 'Варианты банка, вопросы по одному, практическая задача, integrity-сигналы, code similarity, retest_of и измерение стабильности грейда.',
             ],
             [
-                'key' => 'ux',
-                'title' => 'Удобство и интуитивность интерфейса',
-                'status' => true,
-                'weight' => 10,
+                'key' => 'ux', 'title' => 'Удобство и интуитивность интерфейса', 'status' => true, 'weight' => 10,
                 'proof' => 'Ролевые кабинеты, Today/Focus, light/dark, фильтры, сравнения, понятные маршруты Match, адаптивные экраны и контекстная помощь.',
             ],
             [
-                'key' => 'technical',
-                'title' => 'Техническая проработка',
-                'status' => true,
-                'weight' => 7,
+                'key' => 'technical', 'title' => 'Техническая проработка', 'status' => true, 'weight' => 7,
                 'proof' => 'Laravel/Vue/TypeScript/MySQL, разделение UI/business/data, OpenAPI, Docker-ready контур и критический путь без GPU/обязательного LLM.',
             ],
             [
-                'key' => 'completeness',
-                'title' => 'Полнота реализации и документация',
-                'status' => $candidateCount > 0 && $employerCount > 0 && $companyCount > 0,
-                'weight' => 6,
+                'key' => 'completeness', 'title' => 'Полнота реализации и документация',
+                'status' => $candidateCount > 0 && $employerCount > 0 && $companyCount > 0, 'weight' => 6,
                 'proof' => 'Оба кабинета, профиль без FSP-истории, FSP ID stub, инструкция запуска, архитектура, тестирование, matching, validation и API описаны в репозитории.',
             ],
             [
-                'key' => 'extras',
-                'title' => 'Дополнительный функционал',
-                'status' => $has('jobs') && $has('interaction_cases') && $has('case_tasks'),
-                'weight' => 7,
+                'key' => 'extras', 'title' => 'Дополнительный функционал',
+                'status' => $has('jobs') && $has('interaction_cases') && $has('case_tasks'), 'weight' => 7,
                 'proof' => 'Самостоятельный отклик, CRUD вакансий, gap/case tasks, Process Center, privacy/trust layer, сравнение компаний и кандидатов, мобильная адаптация.',
             ],
             [
-                'key' => 'pitch',
-                'title' => 'Презентация и выступление',
-                'status' => true,
-                'weight' => 10,
+                'key' => 'pitch', 'title' => 'Презентация и выступление', 'status' => true, 'weight' => 10,
                 'proof' => 'Jury Demo даёт 7–10 минутный сценарий: assessment → categorization → employer search → explainable match → contact → validation/analytics.',
             ],
         ];
@@ -125,6 +114,11 @@ class JuryDemoController extends Controller
                 'avgRetestDelta' => $retests?->avg_delta === null ? null : round((float) $retests->avg_delta, 1),
                 'gradeStability' => $retests?->grade_stability === null ? null : round((float) $retests->grade_stability, 1),
                 'readinessScore' => $readinessScore,
+                'matchPairs' => $validation['pairs'] ?? 0,
+                'matchPrecision' => $validation['precision'] ?? null,
+                'matchRecall' => $validation['recall'] ?? null,
+                'matchF1' => $validation['f1'] ?? null,
+                'scoreSeparation' => $validation['scoreSeparation'] ?? null,
             ],
             'criteria' => $criteria,
             'routes' => $routeDistribution,
@@ -143,9 +137,56 @@ class JuryDemoController extends Controller
                 ],
                 [
                     'title' => 'Проверка качества системы',
-                    'steps' => ['Админ показывает test-retest и integrity', 'Сравнивает людей, компании и города', 'Показывает воспроизводимую логику Match', 'Жюри может повторить путь на синтетических профилях'],
+                    'steps' => ['Админ показывает test-retest и integrity', 'Запускает fsp:validate / показывает F1', 'Сравнивает людей, компании и города', 'Жюри может повторить путь на синтетических профилях'],
                 ],
             ],
         ]);
+    }
+
+    /** @return array<string,int|float|null> */
+    private function matchValidation(): array
+    {
+        $file = base_path('database/fsp_match_v6/validation_pairs.json');
+        if (! is_file($file) || ! Schema::hasTable('users') || ! Schema::hasTable('jobs')) {
+            return ['pairs' => 0, 'precision' => null, 'recall' => null, 'f1' => null, 'scoreSeparation' => null];
+        }
+
+        try {
+            $pairs = json_decode((string) file_get_contents($file), true, flags: JSON_THROW_ON_ERROR);
+        } catch (\Throwable) {
+            return ['pairs' => 0, 'precision' => null, 'recall' => null, 'f1' => null, 'scoreSeparation' => null];
+        }
+
+        $tp = $fp = $fn = 0;
+        $relevant = [];
+        $irrelevant = [];
+        $evaluated = 0;
+        foreach ($pairs as $pair) {
+            $candidateId = DB::table('users')->where('email', $pair['candidate_email'] ?? '')->value('user_id');
+            if (! $candidateId || ! DB::table('jobs')->where('job_id', (int) ($pair['job_id'] ?? 0))->exists()) continue;
+            $result = $this->matchEngine->compare((int) $candidateId, (int) $pair['job_id']);
+            $expected = (bool) ($pair['relevant'] ?? false);
+            $predicted = in_array($result['route'], ['invite', 'clarify'], true);
+            $score = (float) $result['score'];
+            $expected ? $relevant[] = $score : $irrelevant[] = $score;
+            if ($expected && $predicted) $tp++;
+            elseif (! $expected && $predicted) $fp++;
+            elseif ($expected && ! $predicted) $fn++;
+            $evaluated++;
+        }
+
+        $precision = ($tp + $fp) ? $tp / ($tp + $fp) : 0;
+        $recall = ($tp + $fn) ? $tp / ($tp + $fn) : 0;
+        $f1 = ($precision + $recall) ? 2 * $precision * $recall / ($precision + $recall) : 0;
+        $avgRel = $relevant ? array_sum($relevant) / count($relevant) : 0;
+        $avgIrr = $irrelevant ? array_sum($irrelevant) / count($irrelevant) : 0;
+
+        return [
+            'pairs' => $evaluated,
+            'precision' => round($precision * 100, 1),
+            'recall' => round($recall * 100, 1),
+            'f1' => round($f1 * 100, 1),
+            'scoreSeparation' => round($avgRel - $avgIrr, 1),
+        ];
     }
 }
