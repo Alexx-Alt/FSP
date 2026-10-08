@@ -30,15 +30,22 @@ class LiveAssessmentController extends Controller
         $data = $request->validate([
             'type' => ['required', 'string', 'max:80'],
             'weight' => ['nullable', 'integer', 'min:1', 'max:10'],
-            'metadata' => ['nullable', 'array'],
+            'metadata' => ['nullable'],
         ]);
+        $metadata = $data['metadata'] ?? [];
+        if (is_string($metadata)) {
+            $metadata = json_decode($metadata, true) ?: [];
+        }
+        if (! is_array($metadata)) {
+            $metadata = [];
+        }
 
         $service->recordEvent(
             $user,
             $session,
             $data['type'],
             (int) ($data['weight'] ?? 1),
-            $data['metadata'] ?? [],
+            $metadata,
         );
 
         return response()->json(['ok' => true]);
