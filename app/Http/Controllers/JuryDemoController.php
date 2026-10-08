@@ -57,7 +57,6 @@ class JuryDemoController extends Controller
             ['route' => 'observe', 'label' => 'Наблюдать', 'note' => 'Есть критичное несовпадение по категории, грейду или обязательному стеку.'],
         ] : [];
 
-        // Веса полностью повторяют раздел 6 официального ТЗ ФСП (35/25/10/7/6/7/10).
         $criteria = [
             [
                 'key' => 'matching', 'title' => 'Новая механика подбора',
@@ -163,15 +162,28 @@ class JuryDemoController extends Controller
         $evaluated = 0;
         foreach ($pairs as $pair) {
             $candidateId = DB::table('users')->where('email', $pair['candidate_email'] ?? '')->value('user_id');
-            if (! $candidateId || ! DB::table('jobs')->where('job_id', (int) ($pair['job_id'] ?? 0))->exists()) continue;
+            if (! $candidateId || ! DB::table('jobs')->where('job_id', (int) ($pair['job_id'] ?? 0))->exists()) {
+                continue;
+            }
+
             $result = $this->matchEngine->compare((int) $candidateId, (int) $pair['job_id']);
             $expected = (bool) ($pair['relevant'] ?? false);
             $predicted = in_array($result['route'], ['invite', 'clarify'], true);
             $score = (float) $result['score'];
-            $expected ? $relevant[] = $score : $irrelevant[] = $score;
-            if ($expected && $predicted) $tp++;
-            elseif (! $expected && $predicted) $fp++;
-            elseif ($expected && ! $predicted) $fn++;
+
+            if ($expected) {
+                $relevant[] = $score;
+            } else {
+                $irrelevant[] = $score;
+            }
+
+            if ($expected && $predicted) {
+                $tp++;
+            } elseif (! $expected && $predicted) {
+                $fp++;
+            } elseif ($expected && ! $predicted) {
+                $fn++;
+            }
             $evaluated++;
         }
 
