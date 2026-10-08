@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\CandidateController;
+use App\Http\Controllers\InteractionController;
+use App\Http\Controllers\LiveAssessmentController;
 use App\Http\Controllers\WorkspaceController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -35,6 +37,13 @@ Route::middleware('auth')->group(function () {
     Route::post('/candidate/career', [CandidateController::class, 'saveCareer'])->name('candidate.career');
     Route::post('/candidate/assessment', [CandidateController::class, 'submitAssessment'])->name('candidate.assessment');
     Route::patch('/candidate/profile', [CandidateController::class, 'updateProfile'])->name('candidate.profile');
+
+    Route::get('/candidate/assessment/session', [LiveAssessmentController::class, 'show'])->name('candidate.assessment.live');
+    Route::post('/candidate/assessment/live/{session}/event', [LiveAssessmentController::class, 'event'])->whereNumber('session')->name('candidate.assessment.live.event');
+    Route::post('/candidate/assessment/live/{session}/submit', [LiveAssessmentController::class, 'submit'])->whereNumber('session')->name('candidate.assessment.live.submit');
+
+    Route::post('/interactions/jobs/{job}/apply', [InteractionController::class, 'apply'])->whereNumber('job')->name('interactions.apply');
+    Route::post('/interactions/jobs/{job}/candidates/{candidate}/invite', [InteractionController::class, 'invite'])->whereNumber('job')->whereNumber('candidate')->name('interactions.invite');
 
     Route::get('/workspace', [WorkspaceController::class, 'show'])->name('workspace');
 
