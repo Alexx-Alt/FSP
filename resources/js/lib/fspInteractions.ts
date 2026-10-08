@@ -23,11 +23,17 @@ function roleCorrectLabels(): void {
     const m = mode();
     if (m !== 'candidate') return;
     document.querySelectorAll<HTMLElement>('.route[data-route="invite"]').forEach((el) => {
-        el.textContent = 'Высокое соответствие';
-        el.title = 'Это рекомендация системы кандидату, а не кнопка работодателя.';
+        if ((el.textContent ?? '').trim() !== 'Высокое соответствие') {
+            el.textContent = 'Высокое соответствие';
+        }
+        if (el.title !== 'Это рекомендация системы кандидату, а не кнопка работодателя.') {
+            el.title = 'Это рекомендация системы кандидату, а не кнопка работодателя.';
+        }
     });
     document.querySelectorAll<HTMLElement>('.candidate-shell .route').forEach((el) => {
-        if ((el.textContent ?? '').trim().toLowerCase() === 'можно приглашать') el.textContent = 'Рекомендуем откликнуться';
+        if ((el.textContent ?? '').trim().toLowerCase() === 'можно приглашать') {
+            el.textContent = 'Рекомендуем откликнуться';
+        }
     });
 }
 
@@ -43,7 +49,12 @@ function actionButton(label: string, className: string, handler: () => void): HT
         const old = button.textContent;
         button.textContent = 'Отправляем…';
         handler();
-        window.setTimeout(() => { if (document.body.contains(button)) { button.disabled = false; button.textContent = old; } }, 2500);
+        window.setTimeout(() => {
+            if (document.body.contains(button)) {
+                button.disabled = false;
+                button.textContent = old;
+            }
+        }, 2500);
     });
     return button;
 }
@@ -98,14 +109,19 @@ function makeSortable(table: HTMLTableElement): void {
             const body = table.tBodies[0];
             if (!body) return;
             const direction = th.dataset.dir === 'asc' ? 'desc' : 'asc';
-            headers.forEach((h) => { delete h.dataset.dir; h.classList.remove('sort-asc', 'sort-desc'); });
+            headers.forEach((h) => {
+                delete h.dataset.dir;
+                h.classList.remove('sort-asc', 'sort-desc');
+            });
             th.dataset.dir = direction;
             th.classList.add(direction === 'asc' ? 'sort-asc' : 'sort-desc');
             const rows = Array.from(body.rows);
             rows.sort((a, b) => {
                 const av = parseCell(a.cells[column]?.textContent ?? '');
                 const bv = parseCell(b.cells[column]?.textContent ?? '');
-                const result = typeof av === 'number' && typeof bv === 'number' ? av - bv : String(av).localeCompare(String(bv), 'ru');
+                const result = typeof av === 'number' && typeof bv === 'number'
+                    ? av - bv
+                    : String(av).localeCompare(String(bv), 'ru');
                 return direction === 'asc' ? result : -result;
             });
             rows.forEach((row) => body.appendChild(row));
@@ -123,15 +139,22 @@ function enhanceCityAnalytics(): void {
         const table = card.querySelector<HTMLTableElement>('table');
         if (!table?.tBodies[0]) return;
         const rows = Array.from(table.tBodies[0].rows);
-        const cities = [...new Set(rows.map((row) => row.cells[0]?.textContent?.trim()).filter(Boolean) as string[])].sort((a,b)=>a.localeCompare(b,'ru'));
+        const cities = [...new Set(rows
+            .map((row) => row.cells[0]?.textContent?.trim())
+            .filter(Boolean) as string[])]
+            .sort((a, b) => a.localeCompare(b, 'ru'));
         const controls = document.createElement('div');
         controls.className = 'fsp-city-controls';
         const select = document.createElement('select');
-        select.innerHTML = `<option value="">Все города России</option>${cities.map((city) => `<option value="${city.replace(/"/g,'&quot;')}">${city}</option>`).join('')}`;
+        select.innerHTML = `<option value="">Все города России</option>${cities
+            .map((city) => `<option value="${city.replace(/"/g, '&quot;')}">${city}</option>`)
+            .join('')}`;
         const hint = document.createElement('span');
         hint.textContent = 'Столбцы таблицы также сортируются кликом по заголовку.';
         select.addEventListener('change', () => {
-            rows.forEach((row) => { row.hidden = Boolean(select.value) && row.cells[0]?.textContent?.trim() !== select.value; });
+            rows.forEach((row) => {
+                row.hidden = Boolean(select.value) && row.cells[0]?.textContent?.trim() !== select.value;
+            });
         });
         controls.append(select, hint);
         table.before(controls);
