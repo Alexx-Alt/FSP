@@ -2,26 +2,33 @@
 
 Папка содержит отдельный сценарий MySQL 8 для ветки `feature/fsp-match-v6-analytics`.
 
-Для чистого развёртывания запускайте по порядку:
+## Чистое развёртывание
+
+Запускайте SQL по порядку:
 
 1. `00_create_database.sql` — создаёт `fsp_match_v6`.
 2. `01_schema.sql` — создаёт полную базовую схему.
 3. `02_seed.sql` — загружает синтетические данные: кандидатов, работодателей, города России, компании, вакансии, assessment, дерево компетенций, FSP evidence, процессы найма, ЛПР, задачи, комментарии, историю и алерты.
 4. `03_optional_views.sql` — необязательные views для ручной аналитики.
-5. `04_phase1_candidate_center.sql` — Phase 1: категории Backend / Frontend / Data / ML/AI / DevOps / Full-stack, Career Compass, банк assessment, ответы, integrity-сигналы и деревья новых направлений.
-6. `05_phase1_2_live_assessment.sql` — Phase 1.2: живая assessment-сессия, события прокторинга, практические code-задачи и ответы на них.
+5. `04_phase1_candidate_center.sql` — категории Backend / Frontend / Data / ML/AI / DevOps / Full-stack, Career Compass, банк assessment, ответы, integrity-сигналы и деревья направлений.
+6. `05_phase1_2_live_assessment.sql` — live assessment, события integrity/proctoring, практические code-задачи и ответы.
+7. `06_mega_update_compliance.sql` — privacy/consent кандидата, FSP ID link state и trust/verification компании.
 
-Если база `fsp_match_v6` уже развёрнута и `04_phase1_candidate_center.sql` выполнялся, **не выполняйте 00–04 заново**. Достаточно выполнить:
+`06_mega_update_compliance.sql` выполняется **один раз**. Это обычный upgrade script с `ALTER TABLE`, а не идемпотентная миграция.
 
-```sql
-SOURCE database/fsp_match_v6/05_phase1_2_live_assessment.sql;
+Если ваша база уже находится на Phase 1.2, **не выполняйте 00–05 повторно**. Откройте в MySQL Workbench только:
+
+```text
+database/fsp_match_v6/06_mega_update_compliance.sql
 ```
 
-или открыть `05_phase1_2_live_assessment.sql` в MySQL Workbench и выполнить целиком.
+и выполните файл целиком.
 
-Если вы обновляетесь сразу со старой v6 без Candidate Center, сначала выполните `04_phase1_candidate_center.sql`, затем `05_phase1_2_live_assessment.sql`.
+Если вы обновляетесь со старой v6 без Candidate Center, сначала примените `04`, затем `05`, затем `06`.
 
-Demo-аккаунты используют один пароль `FspDemo2026!`:
+## Demo-аккаунты
+
+У всех пароль `FspDemo2026!`:
 
 - кандидат: `candidate@fsp.demo`
 - работодатель: `employer@fsp.demo`
@@ -41,16 +48,85 @@ CACHE_STORE=file
 QUEUE_CONNECTION=sync
 ```
 
-После изменения `.env` или SQL-схемы выполните `php artisan optimize:clear`.
+После изменения `.env` или SQL-схемы:
 
-## Phase 1 — Candidate Center
+```bash
+php artisan optimize:clear
+```
 
-После `04_phase1_candidate_center.sql` кандидат получает отдельный крупный кабинет `/candidate`: профессиональный паспорт, Career Compass, дерево evidence, объяснимые вакансии, test-retest историю, cooldown смены грейда, FSP ID и Process Center.
+## Candidate Center
 
-## Phase 1.2 — live assessment + реальные действия рынка
+`/candidate` содержит профессиональный паспорт, Career Compass, Obsidian-like knowledge graph / дерево evidence, объяснимые вакансии, test-retest историю, cooldown смены грейда, FSP achievements и Process Center.
 
-После `05_phase1_2_live_assessment.sql` новый assessment идёт по одному вопросу за раз. Смена вкладки, потеря фокуса, copy/paste/cut, подозрительные горячие клавиши, выход из fullscreen, быстрый ответ и резкая вставка кода фиксируются как отдельные integrity-сигналы. В каждой сессии есть практическая задача с текстом решения; ответ получает отдельный score и сравнивается с прошлыми решениями как сигнал возможного копирования. Повышенный риск не обнуляет тест автоматически — попытка требует ручной проверки и не меняет подтверждённый грейд до неё.
+Правило неизменно: желаемый грейд выбирает кандидат, а `confirmed_grade` меняет только assessment. FSP ID / achievements добавляют evidence и небольшой ranking boost, но не назначают грейд.
 
-Механика рынка использует уже существующие `interaction_cases`: кандидат может откликнуться на вакансию, работодатель — адресно пригласить кандидата. Для входящего отклика работодатель может принять его; после взаимного шага контакты разблокируются. Повторные активные процессы по одной паре кандидат-вакансия не создаются.
+## Live assessment
 
-Правила модели сохраняются: желаемый грейд выбирает кандидат; официальный `confirmed_grade` появляется только из assessment; FSP ID и другие evidence усиливают профиль внутри уже сопоставимой категории/грейда, но не назначают грейд; неподтверждённый грейд не скрывает кандидата; integrity-сигналы сами по себе не являются автоматическим обвинением; `interaction_cases` хранит длительный сетевой процесс с несколькими ЛПР, задачами, прогрессом, алертами, комментариями, дублями, переоткрытиями и audit trail.
+После `05_phase1_2_live_assessment.sql` assessment выдаёт один вопрос за раз. Отдельно фиксируются:
+
+- `visibilitychange` / смена вкладки;
+- потеря фокуса;
+- выход из fullscreen;
+- copy / paste / cut;
+- context menu и подозрительные hotkeys;
+- слишком быстрые ответы;
+- резкая большая вставка кода;
+- code similarity для практического ответа.
+
+Integrity-сигнал **не является автоматическим обвинением**. Повышенный риск создаёт `reviewRequired`, а подтверждённый грейд не меняется автоматически до проверки.
+
+## Process Center
+
+Кандидат может самостоятельно откликнуться, работодатель — адресно пригласить. После взаимного шага контакты разблокируются. `interaction_cases` хранит длительный процесс: несколько ЛПР, задачи, комментарии, прогресс, алерты, дубли, переоткрытия и audit trail.
+
+## Privacy / consent / FSP ID
+
+После `06_mega_update_compliance.sql` кандидат может:
+
+- включить/выключить участие профиля в новых подборках работодателей;
+- отозвать согласие на обработку и/или публикацию профессионального профиля;
+- указать mock FSP ID для демонстрации будущей интеграции.
+
+Match Engine проверяет эти флаги и не включает приватные/отозванные профили в новые employer shortlist. Аналитика кандидата относительно других кандидатов обезличена.
+
+## Синтетическая валидация Match
+
+Файл `validation_pairs.json` содержит размеченные пары `кандидат ↔ вакансия` с позитивными и негативными примерами из seed-датасета.
+
+Запуск:
+
+```bash
+php artisan fsp:validate
+```
+
+Машиночитаемый вывод:
+
+```bash
+php artisan fsp:validate --json
+```
+
+Команда показывает precision, recall, F1, accuracy, средний score релевантных/нерелевантных пар и separation. Для воспроизводимого demo boundary используется:
+
+- `invite` / `clarify` → relevant;
+- `perspective` / `observe` → not relevant.
+
+Те же показатели выводятся администратору в `/jury-demo`.
+
+## Docker
+
+Для чистой демонстрационной среды:
+
+```bash
+docker compose up --build
+```
+
+MySQL при создании нового volume выполняет SQL-файлы `00..06` по имени автоматически.
+
+Полный сброс **только Docker demo-БД**:
+
+```bash
+docker compose down -v
+docker compose up --build
+```
+
+Не используйте `down -v`, если в Docker volume находятся нужные вам данные.
