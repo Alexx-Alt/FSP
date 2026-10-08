@@ -7,9 +7,12 @@ import { initializeFlashToast } from '@/lib/flashToast';
 import { installFspEnhancements } from '@/lib/fspEnhancements';
 import { installFspInteractions } from '@/lib/fspInteractions';
 import { installFspProcessActions } from '@/lib/fspProcessActions';
+import { installFspCompareFeedback } from '@/lib/fspCompareFeedback';
 import '../css/fsp-enhancements.css';
 import '../css/fsp-v6-fixes.css';
 import '../css/fsp-process-actions.css';
+import '../css/fsp-compare-feedback.css';
+import '../css/fsp-theme-hardening.css';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
@@ -47,3 +50,4 @@ initializeFlashToast();
 installFspEnhancements();
 installFspInteractions();
 installFspProcessActions();
+installFspCompareFeedback();
