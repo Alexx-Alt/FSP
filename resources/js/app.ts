@@ -11,11 +11,11 @@ void createInertiaApp({
     title: (title) => (title ? `${title} - ${appName}` : appName),
     layout: (name) => {
         switch (true) {
-           case name === 'Welcome':
+            case name === 'Welcome':
             case name === 'Dashboard':
+            case name === 'FspWorkspace':
             case name.startsWith('auth/'):
-    return null;
-            
+                return null;
         }
     },
     withApp: (app) => {
@@ -28,12 +28,9 @@ void createInertiaApp({
         });
     },
     progress: {
-        color: '#4B5563',
+        color: '#6d28d9',
     },
 });
 
-// This will set light / dark mode on page load...
 initializeTheme();
-
-// This will listen for flash toast data from the server...
 initializeFlashToast();
