@@ -7,6 +7,7 @@ use App\Services\Fsp\LiveAssessmentService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -17,6 +18,8 @@ class LiveAssessmentController extends Controller
         /** @var User $user */
         $user = $request->user();
         abort_unless($user->role === 'applicant', 403);
+
+        $this->enableSignedUnsignedSubtraction();
 
         return Inertia::render('AssessmentSession', [
             'session' => $service->start($user),
@@ -70,5 +73,31 @@ class LiveAssessmentController extends Controller
             : 'Тест завершён: '.$result['score'].'/100, практическая часть '.$result['codeScore'].'/100.';
 
         return to_route('candidate.center')->with('success', $message);
+    }
+
+    /**
+     * assessment_questions.difficulty хранится как UNSIGNED.
+     * В MySQL выражение `difficulty - 3` для значений 1/2 может выбрасывать
+     * BIGINT UNSIGNED out of range. Этот режим заставляет результат вычитания
+     * быть знаковым и сохраняет текущую схему БД без обязательного ALTER TABLE.
+     */
+    private function enableSignedUnsignedSubtraction(): void
+    {
+        if (DB::connection()->getDriverName() !== 'mysql') {
+            return;
+        }
+
+        $row = DB::selectOne('SELECT @@SESSION.sql_mode AS sql_mode');
+        $modes = array_values(array_filter(array_map(
+            'trim',
+            explode(',', (string) ($row->sql_mode ?? ''))
+        )));
+
+        if (in_array('NO_UNSIGNED_SUBTRACTION', $modes, true)) {
+            return;
+        }
+
+        $modes[] = 'NO_UNSIGNED_SUBTRACTION';
+        DB::statement('SET SESSION sql_mode = ?', [implode(',', array_unique($modes))]);
     }
 }
