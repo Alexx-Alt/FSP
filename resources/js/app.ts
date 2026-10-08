@@ -16,6 +16,7 @@ import '../css/fsp-process-actions.css';
 import '../css/fsp-compare-feedback.css';
 import '../css/fsp-theme-hardening.css';
 import '../css/fsp-product-polish.css';
+import '../css/fsp-role-nav.css';
 import '../css/jury-demo.css';
 import '../css/employer-jobs.css';
 import '../css/candidate-settings.css';
