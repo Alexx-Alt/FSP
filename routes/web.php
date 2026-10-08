@@ -3,6 +3,7 @@
 use App\Http\Controllers\ApplicationDecisionController;
 use App\Http\Controllers\CandidateController;
 use App\Http\Controllers\ComparisonController;
+use App\Http\Controllers\EmployerJobsController;
 use App\Http\Controllers\InteractionController;
 use App\Http\Controllers\JuryDemoController;
 use App\Http\Controllers\LiveAssessmentController;
@@ -45,6 +46,12 @@ Route::middleware('auth')->group(function () {
     Route::get('/candidate/assessment/session', [LiveAssessmentController::class, 'show'])->name('candidate.assessment.live');
     Route::post('/candidate/assessment/live/{session}/event', [LiveAssessmentController::class, 'event'])->whereNumber('session')->name('candidate.assessment.live.event');
     Route::post('/candidate/assessment/live/{session}/submit', [LiveAssessmentController::class, 'submit'])->whereNumber('session')->name('candidate.assessment.live.submit');
+
+    Route::get('/employer/jobs', [EmployerJobsController::class, 'index'])->name('employer.jobs');
+    Route::post('/employer/jobs', [EmployerJobsController::class, 'store'])->name('employer.jobs.store');
+    Route::patch('/employer/jobs/{job}', [EmployerJobsController::class, 'update'])->whereNumber('job')->name('employer.jobs.update');
+    Route::patch('/employer/jobs/{job}/status', [EmployerJobsController::class, 'status'])->whereNumber('job')->name('employer.jobs.status');
+    Route::delete('/employer/jobs/{job}', [EmployerJobsController::class, 'destroy'])->whereNumber('job')->name('employer.jobs.destroy');
 
     Route::post('/interactions/jobs/{job}/apply', [InteractionController::class, 'apply'])->whereNumber('job')->name('interactions.apply');
     Route::post('/interactions/jobs/{job}/candidates/{candidate}/invite', [InteractionController::class, 'invite'])->whereNumber('job')->whereNumber('candidate')->name('interactions.invite');
