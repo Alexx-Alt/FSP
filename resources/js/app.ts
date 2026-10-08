@@ -8,11 +8,14 @@ import { installFspEnhancements } from '@/lib/fspEnhancements';
 import { installFspInteractions } from '@/lib/fspInteractions';
 import { installFspProcessActions } from '@/lib/fspProcessActions';
 import { installFspCompareFeedback } from '@/lib/fspCompareFeedback';
+import { installFspProductPolish } from '@/lib/fspProductPolish';
 import '../css/fsp-enhancements.css';
 import '../css/fsp-v6-fixes.css';
 import '../css/fsp-process-actions.css';
 import '../css/fsp-compare-feedback.css';
 import '../css/fsp-theme-hardening.css';
+import '../css/fsp-product-polish.css';
+import '../css/jury-demo.css';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
@@ -28,6 +31,7 @@ void createInertiaApp({
             case name === 'FspWorkspace':
             case name === 'CandidateCenter':
             case name === 'AssessmentSession':
+            case name === 'JuryDemo':
             case name.startsWith('auth/'):
                 return null;
         }
@@ -51,3 +55,4 @@ installFspEnhancements();
 installFspInteractions();
 installFspProcessActions();
 installFspCompareFeedback();
+installFspProductPolish();
