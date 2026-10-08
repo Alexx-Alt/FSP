@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\CandidateController;
 use App\Http\Controllers\WorkspaceController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -24,7 +25,17 @@ Route::get('/', function () {
 })->name('home');
 
 Route::middleware('auth')->group(function () {
-    Route::get('/dashboard', fn () => redirect()->route('workspace'))->name('dashboard');
+    Route::get('/dashboard', function (Request $request) {
+        return $request->user()->role === 'applicant'
+            ? redirect()->route('candidate.center')
+            : redirect()->route('workspace');
+    })->name('dashboard');
+
+    Route::get('/candidate', [CandidateController::class, 'show'])->name('candidate.center');
+    Route::post('/candidate/career', [CandidateController::class, 'saveCareer'])->name('candidate.career');
+    Route::post('/candidate/assessment', [CandidateController::class, 'submitAssessment'])->name('candidate.assessment');
+    Route::patch('/candidate/profile', [CandidateController::class, 'updateProfile'])->name('candidate.profile');
+
     Route::get('/workspace', [WorkspaceController::class, 'show'])->name('workspace');
 
     Route::post('/workspace/cases/{case}/comments', [WorkspaceController::class, 'comment'])->whereNumber('case')->name('workspace.cases.comments');
@@ -35,12 +46,12 @@ Route::middleware('auth')->group(function () {
 
     Route::patch('/dashboard/profile', function (Request $request) {
         $data = $request->validate([
-            'headline' => ['nullable', 'string', 'max:150'],
+            'headline' => ['nullable', 'string', 'max:180'],
             'city' => ['nullable', 'string', 'max:100'],
             'bio' => ['nullable', 'string', 'max:3000'],
-            'skills' => ['nullable', 'string', 'max:255'],
-            'company' => ['nullable', 'string', 'max:100'],
-            'primary_category' => ['nullable', Rule::in(['Backend', 'Frontend'])],
+            'skills' => ['nullable', 'string', 'max:600'],
+            'company' => ['nullable', 'string', 'max:160'],
+            'primary_category' => ['nullable', Rule::in(['Backend', 'Frontend', 'Data', 'ML/AI', 'DevOps', 'Full-stack'])],
             'desired_grade' => ['nullable', Rule::in(['intern', 'junior', 'middle', 'senior', 'lead'])],
             'salary_expected' => ['nullable', 'integer', 'min:0', 'max:2000000'],
             'work_format' => ['nullable', Rule::in(['office', 'hybrid', 'remote', 'any'])],
@@ -54,7 +65,9 @@ Route::middleware('auth')->group(function () {
         }
 
         $request->user()->update($data);
-        return to_route('workspace');
+        return $request->user()->role === 'applicant'
+            ? to_route('candidate.center')
+            : to_route('workspace');
     })->name('dashboard.profile');
 });
 
