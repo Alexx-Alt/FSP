@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ApplicationDecisionController;
 use App\Http\Controllers\CandidateController;
 use App\Http\Controllers\InteractionController;
 use App\Http\Controllers\LiveAssessmentController;
@@ -44,6 +45,7 @@ Route::middleware('auth')->group(function () {
 
     Route::post('/interactions/jobs/{job}/apply', [InteractionController::class, 'apply'])->whereNumber('job')->name('interactions.apply');
     Route::post('/interactions/jobs/{job}/candidates/{candidate}/invite', [InteractionController::class, 'invite'])->whereNumber('job')->whereNumber('candidate')->name('interactions.invite');
+    Route::post('/interactions/cases/{case}/accept-application', [ApplicationDecisionController::class, 'accept'])->whereNumber('case')->name('interactions.application.accept');
 
     Route::get('/workspace', [WorkspaceController::class, 'show'])->name('workspace');
 
