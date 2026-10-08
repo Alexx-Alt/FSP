@@ -1,32 +1,43 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}"  @class(['dark' => ($appearance ?? 'system') == 'dark'])>
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" @class(['dark' => ($appearance ?? 'system') == 'dark'])>
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
 
-        {{-- Inline script to detect system dark mode preference and apply it immediately --}}
+        {{-- Resolve the theme before CSS/Vue mount, matching the original Nova approach. --}}
         <script>
             (function() {
-                const appearance = '{{ $appearance ?? "system" }}';
+                try {
+                    const serverAppearance = '{{ $appearance ?? "system" }}';
+                    const storedAppearance = localStorage.getItem('appearance');
+                    const appearance = storedAppearance || serverAppearance || 'system';
+                    const dark = appearance === 'dark'
+                        || (appearance === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
 
-                if (appearance === 'system') {
-                    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-
-                    if (prefersDark) {
-                        document.documentElement.classList.add('dark');
-                    }
+                    document.documentElement.classList.toggle('dark', dark);
+                    document.documentElement.dataset.theme = dark ? 'midnight' : 'light';
+                    document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
+                } catch (e) {
+                    document.documentElement.classList.remove('dark');
+                    document.documentElement.dataset.theme = 'light';
                 }
             })();
         </script>
 
-        {{-- Inline style to set the HTML background color based on our theme in app.css --}}
         <style>
-            html {
-                background-color: oklch(1 0 0);
+            html,
+            body {
+                margin: 0;
+                background: #f6f4f9;
+                color: #1f1a29;
             }
 
-            html.dark {
-                background-color: oklch(0.145 0 0);
+            html.dark,
+            html.dark body,
+            html[data-theme="midnight"],
+            html[data-theme="midnight"] body {
+                background: #0d0b11;
+                color: #f7f3fb;
             }
         </style>
 
