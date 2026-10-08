@@ -23,8 +23,13 @@ use Illuminate\Notifications\Notifiable;
     'grade_status',
     'salary_expected',
     'work_format',
+    'profile_visibility',
+    'consent_processing',
+    'consent_publication',
+    'fsp_id_external',
+    'fsp_id_linked',
 ])]
-#[Hidden(['password_hash', 'remember_token'])]
+#[Hidden(['password_hash', 'remember_token', 'two_factor_secret', 'two_factor_recovery_codes'])]
 class User extends Authenticatable
 {
     use Notifiable;
@@ -43,7 +48,11 @@ class User extends Authenticatable
         return [
             'password_hash' => 'hashed',
             'created_at' => 'datetime',
+            'email_verified_at' => 'datetime',
             'salary_expected' => 'integer',
+            'consent_processing' => 'boolean',
+            'consent_publication' => 'boolean',
+            'fsp_id_linked' => 'boolean',
         ];
     }
 }
