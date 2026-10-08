@@ -3,6 +3,7 @@
 namespace App\Services\Fsp;
 
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class MatchEngine
 {
@@ -127,7 +128,20 @@ class MatchEngine
             return [];
         }
 
-        $candidateIds = DB::table('users')->where('role', 'applicant')->pluck('user_id');
+        $candidateQuery = DB::table('users')->where('role', 'applicant');
+        // Privacy fields were introduced by Phase 06. Old databases stay backward compatible,
+        // while upgraded databases exclude candidates who explicitly disabled publication.
+        if (Schema::hasColumn('users', 'profile_visibility')) {
+            $candidateQuery->where('profile_visibility', 'employers');
+        }
+        if (Schema::hasColumn('users', 'consent_processing')) {
+            $candidateQuery->where('consent_processing', true);
+        }
+        if (Schema::hasColumn('users', 'consent_publication')) {
+            $candidateQuery->where('consent_publication', true);
+        }
+        $candidateIds = $candidateQuery->pluck('user_id');
+
         $rows = collect();
         foreach ($candidateIds as $candidateId) {
             foreach ($jobIds as $jobId) {
