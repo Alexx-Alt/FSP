@@ -1,0 +1,295 @@
+openapi: 3.0.3
+info:
+  title: FSP / ИТ-MATCH PRO API
+  version: 6.0.0
+  description: |
+    API-контракт критических пользовательских сценариев прототипа. Аутентификация выполняется
+    Laravel session/cookie; mutating endpoints защищены CSRF. Грейд изменяется только assessment.
+servers:
+  - url: http://127.0.0.1:8000
+paths:
+  /candidate:
+    get:
+      summary: Кабинет кандидата
+      responses:
+        '200': { description: Candidate Center }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /candidate/settings:
+    get:
+      summary: Настройки приватности и FSP ID
+      responses:
+        '200': { description: Settings page }
+    patch:
+      summary: Сохранить согласия и видимость профиля
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [profile_visibility, consent_processing, consent_publication]
+              properties:
+                profile_visibility: { type: string, enum: [employers, private] }
+                consent_processing: { type: boolean }
+                consent_publication: { type: boolean }
+                fsp_id_external: { type: string, nullable: true, maxLength: 120 }
+      responses:
+        '302': { description: Settings saved }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /candidate/assessment/session:
+    get:
+      summary: Создать live assessment session
+      description: Выдаёт вопросы по одному в интерфейсе; категория берётся из профиля, желаемый грейд — из выбора кандидата.
+      responses:
+        '200': { description: Assessment session page }
+        '422': { description: Банк заданий не развёрнут или недостаточен }
+  /candidate/assessment/live/{session}/event:
+    post:
+      summary: Записать integrity-сигнал
+      parameters:
+        - $ref: '#/components/parameters/SessionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [type, weight]
+              properties:
+                type: { type: string, example: visibility_hidden }
+                weight: { type: integer, minimum: 1, maximum: 10 }
+                metadata: { type: object, additionalProperties: true }
+      responses:
+        '204': { description: Signal stored }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /candidate/assessment/live/{session}/submit:
+    post:
+      summary: Завершить assessment
+      parameters:
+        - $ref: '#/components/parameters/SessionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [answers]
+              properties:
+                answers:
+                  type: array
+                  items:
+                    oneOf:
+                      - $ref: '#/components/schemas/ChoiceAnswer'
+                      - $ref: '#/components/schemas/CodeAnswer'
+      responses:
+        '200':
+          description: Итог assessment
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AssessmentResult' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /employer/jobs:
+    get:
+      summary: Employer Vacancy Studio
+      responses:
+        '200': { description: Список и редактор вакансий работодателя }
+    post:
+      summary: Создать вакансию
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/JobInput' }
+      responses:
+        '302': { description: Vacancy created }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /employer/jobs/{job}:
+    patch:
+      summary: Изменить вакансию
+      parameters:
+        - $ref: '#/components/parameters/JobId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/JobInput' }
+      responses:
+        '302': { description: Vacancy updated }
+        '404': { description: Vacancy not found or not owned }
+    delete:
+      summary: Удалить черновик или закрыть вакансию с историей
+      parameters:
+        - $ref: '#/components/parameters/JobId'
+      responses:
+        '302': { description: Deleted or safely closed }
+  /employer/jobs/{job}/status:
+    patch:
+      summary: Изменить статус вакансии
+      parameters:
+        - $ref: '#/components/parameters/JobId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status: { type: string, enum: [draft, open, paused, closed] }
+      responses:
+        '302': { description: Status changed }
+  /compare/candidate/companies:
+    get:
+      summary: Сравнение компаний кандидатом
+      parameters:
+        - { in: query, name: city, schema: { type: string } }
+        - { in: query, name: grade, schema: { type: string } }
+        - { in: query, name: format, schema: { type: string } }
+        - { in: query, name: score_min, schema: { type: integer, minimum: 0, maximum: 100 } }
+      responses:
+        '200': { description: Companies + best matching job + fit breakdown }
+  /compare/employer/candidates:
+    get:
+      summary: Сравнение кандидатов работодателем
+      parameters:
+        - { in: query, name: city, schema: { type: string } }
+        - { in: query, name: category, schema: { type: string } }
+        - { in: query, name: grade, schema: { type: string } }
+        - { in: query, name: score_min, schema: { type: integer, minimum: 0, maximum: 100 } }
+        - { in: query, name: assessment_min, schema: { type: number } }
+        - { in: query, name: integrity_min, schema: { type: number } }
+      responses:
+        '200': { description: Candidate shortlist with evidence/assessment/match factors }
+  /interactions/jobs/{job}/apply:
+    post:
+      summary: Самостоятельный отклик кандидата
+      parameters:
+        - $ref: '#/components/parameters/JobId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message: { type: string, maxLength: 2000 }
+      responses:
+        '302': { description: Application case created }
+  /interactions/jobs/{job}/candidates/{candidate}/invite:
+    post:
+      summary: Адресное приглашение кандидата
+      parameters:
+        - $ref: '#/components/parameters/JobId'
+        - { in: path, name: candidate, required: true, schema: { type: integer } }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message: { type: string, maxLength: 2000 }
+      responses:
+        '302': { description: Invitation case created }
+  /interactions/cases/{case}/accept-application:
+    post:
+      summary: Работодатель принимает входящий отклик
+      parameters:
+        - $ref: '#/components/parameters/CaseId'
+      responses:
+        '302': { description: Case moved to screening; contacts can be unlocked }
+  /workspace/cases/{case}/respond:
+    post:
+      summary: Кандидат отвечает на приглашение
+      parameters:
+        - $ref: '#/components/parameters/CaseId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [decision]
+              properties:
+                decision: { type: string, enum: [accept, decline] }
+      responses:
+        '302': { description: Invitation status updated }
+  /workspace/cases/{case}/comments:
+    post:
+      summary: Добавить комментарий к процессу
+      parameters:
+        - $ref: '#/components/parameters/CaseId'
+      responses:
+        '302': { description: Comment saved }
+  /workspace/cases/{case}/tasks:
+    post:
+      summary: Создать задачу / gap-task
+      parameters:
+        - $ref: '#/components/parameters/CaseId'
+      responses:
+        '302': { description: Task created }
+  /workspace/cases/{case}/feedback:
+    post:
+      summary: Обратная связь после взаимодействия/найма
+      parameters:
+        - $ref: '#/components/parameters/CaseId'
+      responses:
+        '302': { description: Feedback stored in case history }
+  /jury-demo:
+    get:
+      summary: Admin-only cockpit соответствия ТЗ и критериям оценки
+      responses:
+        '200': { description: Jury Demo }
+        '403': { $ref: '#/components/responses/Forbidden' }
+components:
+  parameters:
+    SessionId: { in: path, name: session, required: true, schema: { type: integer } }
+    JobId: { in: path, name: job, required: true, schema: { type: integer } }
+    CaseId: { in: path, name: case, required: true, schema: { type: integer } }
+  schemas:
+    JobInput:
+      type: object
+      required: [title, description, location, salary_min, salary_max, skills, category, grade_required, work_format, status]
+      properties:
+        title: { type: string, maxLength: 180 }
+        description: { type: string, minLength: 30, maxLength: 5000 }
+        location: { type: string, maxLength: 100 }
+        salary_min: { type: integer, minimum: 1 }
+        salary_max: { type: integer, minimum: 1 }
+        skills: { type: string, maxLength: 600 }
+        category: { type: string, enum: [Backend, Frontend, Data, ML/AI, DevOps, Full-stack] }
+        grade_required: { type: string, enum: [intern, junior, middle, senior, lead] }
+        work_format: { type: string, enum: [office, hybrid, remote, any] }
+        status: { type: string, enum: [draft, open, paused, closed] }
+    ChoiceAnswer:
+      type: object
+      required: [kind, question_id, selected_index]
+      properties:
+        kind: { type: string, enum: [choice] }
+        question_id: { type: integer }
+        selected_index: { type: integer }
+        response_ms: { type: integer }
+    CodeAnswer:
+      type: object
+      required: [kind, question_id, code]
+      properties:
+        kind: { type: string, enum: [code] }
+        question_id: { type: integer }
+        code: { type: string }
+        response_ms: { type: integer }
+    AssessmentResult:
+      type: object
+      properties:
+        assessmentId: { type: integer }
+        score: { type: number }
+        choiceScore: { type: number }
+        codeScore: { type: number }
+        integrityScore: { type: number }
+        risk: { type: number }
+        similarity: { type: number }
+        reviewRequired: { type: boolean }
+        passed: { type: boolean }
+        threshold: { type: integer }
+  responses:
+    Forbidden:
+      description: Недостаточно прав для роли
+    ValidationError:
+      description: Ошибка валидации входных данных
