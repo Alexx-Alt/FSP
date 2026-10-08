@@ -4,7 +4,7 @@ import { computed, ref } from 'vue';
 
 const props = defineProps<{
     auth:{user:any};
-    company:{id:number|null;name:string;city:string|null;quality:number|null};
+    company:{id:number|null;name:string;city:string|null;quality:number|null;verification:string;trust:number|null};
     jobs:Array<any>;
     categories:string[];
     grades:string[];
@@ -16,6 +16,7 @@ const statusFilter = ref('all');
 const gradeNames:Record<string,string>={intern:'Intern',junior:'Junior',middle:'Middle',senior:'Senior',lead:'Lead'};
 const formatNames:Record<string,string>={office:'Офис',hybrid:'Гибрид',remote:'Удалённо',any:'Любой'};
 const statusNames:Record<string,string>={draft:'Черновик',open:'Открыта',paused:'Пауза',closed:'Закрыта'};
+const verificationNames:Record<string,string>={verified:'Проверена',pending:'На проверке',unverified:'Не проверена',rejected:'Отклонена',legacy:'Legacy demo'};
 const money=(v:number)=>new Intl.NumberFormat('ru-RU').format(v||0)+' ₽';
 
 const form=useForm({title:'',description:'',location:props.company.city??'Москва',salary_min:150000,salary_max:250000,skills:'PHP, Laravel, PostgreSQL',category:'Backend',grade_required:'middle',work_format:'hybrid',status:'open'});
@@ -47,7 +48,7 @@ function logout(){router.post('/logout');}
 
 <main class="employer-jobs-container">
     <section class="employer-jobs-hero">
-        <div><span class="eyebrow">Описание потребности → подбор → приглашение</span><h1>Управляйте вакансиями как <em>входом в Match Engine</em>.</h1><p>Стек, категория, грейд, зарплата и формат используются в объяснимом подборе. Зарплатный диапазон обязателен и виден кандидату до контакта.</p></div>
+        <div><span class="eyebrow">Описание потребности → подбор → приглашение</span><h1>Управляйте вакансиями как <em>входом в Match Engine</em>.</h1><p>Стек, категория, грейд, зарплата и формат используются в объяснимом подборе. Зарплатный диапазон обязателен и виден кандидату до контакта.</p><div class="employer-trust-line"><span :class="['verification',company.verification]">{{verificationNames[company.verification]??company.verification}}</span><span v-if="company.trust!=null">Trust {{Math.round(company.trust)}}/100</span><span>Контакты кандидата — после взаимного шага</span></div></div>
         <div class="employer-jobs-kpis"><article><span>Открыто</span><b>{{openCount}}</b></article><article><span>Отклики</span><b>{{responseCount}}</b></article><article><span>Приглашения</span><b>{{inviteCount}}</b></article><article><span>Hiring quality</span><b>{{company.quality??'—'}}</b></article></div>
     </section>
 
