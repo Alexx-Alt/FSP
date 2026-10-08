@@ -1,0 +1,14 @@
+[
+  {"candidate_email":"candidate@fsp.demo","job_id":1,"relevant":true,"reason":"Middle Backend; полный основной стек; зарплата и hybrid совпадают"},
+  {"candidate_email":"timur@fsp.demo","job_id":2,"relevant":true,"reason":"Senior Backend; сильный стек и подтверждённый грейд"},
+  {"candidate_email":"ivan@fsp.demo","job_id":4,"relevant":true,"reason":"Middle Frontend; Vue/TypeScript/Pinia"},
+  {"candidate_email":"sergey@fsp.demo","job_id":6,"relevant":true,"reason":"Junior Backend; PHP/Laravel; офисный формат"},
+  {"candidate_email":"anna@fsp.demo","job_id":7,"relevant":true,"reason":"Junior Frontend; Vue/TypeScript/CSS"},
+  {"candidate_email":"nikita@fsp.demo","job_id":4,"relevant":true,"reason":"Middle Frontend; сильный Vue/TypeScript профиль"},
+  {"candidate_email":"candidate@fsp.demo","job_id":4,"relevant":false,"reason":"Backend-кандидат против Frontend-вакансии"},
+  {"candidate_email":"ivan@fsp.demo","job_id":1,"relevant":false,"reason":"Frontend-кандидат против Backend-вакансии"},
+  {"candidate_email":"elena@fsp.demo","job_id":2,"relevant":false,"reason":"Intern/not-confirmed против Senior Backend"},
+  {"candidate_email":"anna@fsp.demo","job_id":2,"relevant":false,"reason":"Frontend Junior против Senior Backend"},
+  {"candidate_email":"timur@fsp.demo","job_id":9,"relevant":false,"reason":"Backend Senior против Frontend Junior"},
+  {"candidate_email":"olga@fsp.demo","job_id":2,"relevant":false,"reason":"Frontend Junior против Senior Backend"}
+]
