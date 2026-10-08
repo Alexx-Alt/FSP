@@ -31,6 +31,9 @@ class AnalyticsService
             ->selectRaw("SUM(state='confirmed') confirmed, SUM(state='partial') partial, SUM(state='claimed') claimed")
             ->first();
 
+        // Candidate analytics is a benchmark, not a directory of other candidates.
+        // We deliberately remove identities of peers to respect the TЗ rule that candidates
+        // must not receive another candidate's profile data.
         $peers = DB::table('users as u')
             ->leftJoin('candidate_skill_evidence as e', function ($join) {
                 $join->on('e.candidate_id', '=', 'u.user_id')->where('e.state', '=', 'confirmed');
@@ -49,18 +52,21 @@ class AnalyticsService
             ->selectRaw('COUNT(DISTINCT fa.achievement_id) fsp_evidence')
             ->selectRaw("LEAST(100, COALESCE(ar.score,0)*.55 + COUNT(DISTINCT e.evidence_id)*5 + COUNT(DISTINCT fa.achievement_id)*2 + CASE WHEN u.grade_status='confirmed' THEN 12 ELSE 0 END) benchmark_score")
             ->orderByDesc('benchmark_score')->limit(12)->get()
-            ->map(fn ($row, $index) => [
-                'rank' => $index + 1,
-                'id' => $row->user_id,
-                'name' => $row->username,
-                'city' => $row->city,
-                'grade' => $row->confirmed_grade,
-                'gradeStatus' => $row->grade_status,
-                'confirmedSkills' => (int) $row->confirmed_skills,
-                'fspEvidence' => (int) $row->fsp_evidence,
-                'score' => (int) round($row->benchmark_score),
-                'isCurrent' => (int) $row->user_id === $id,
-            ])->all();
+            ->map(function ($row, $index) use ($id) {
+                $isCurrent = (int) $row->user_id === $id;
+                return [
+                    'rank' => $index + 1,
+                    'id' => $isCurrent ? (int) $row->user_id : null,
+                    'name' => $isCurrent ? $row->username : 'Кандидат #'.($index + 1),
+                    'city' => $isCurrent ? $row->city : null,
+                    'grade' => $row->confirmed_grade,
+                    'gradeStatus' => $row->grade_status,
+                    'confirmedSkills' => (int) $row->confirmed_skills,
+                    'fspEvidence' => (int) $row->fsp_evidence,
+                    'score' => (int) round($row->benchmark_score),
+                    'isCurrent' => $isCurrent,
+                ];
+            })->all();
 
         return [
             'mode' => 'candidate',
