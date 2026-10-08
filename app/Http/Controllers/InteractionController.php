@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class InteractionController extends Controller
 {
@@ -93,9 +94,53 @@ class InteractionController extends Controller
         $data = $request->validate(['message' => ['nullable', 'string', 'max:1500']]);
         $message = trim((string) ($data['message'] ?? ''));
 
+        $jobRow = $this->ownedOpenJob($user, $job);
+        $candidateRow = $this->availableCandidate($candidate);
+        abort_unless($candidateRow, 404);
+
+        $created = $this->createInvitation($user, $jobRow, $candidateRow, $message, false);
+        return $created
+            ? back()->with('success', 'Адресное приглашение отправлено кандидату.')
+            : back()->with('info', 'С этим кандидатом уже есть активный процесс по вакансии.');
+    }
+
+    public function inviteBulk(Request $request): RedirectResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+        abort_unless($user->role === 'employer', 403);
+
+        $data = $request->validate([
+            'items' => ['required', 'array', 'min:1', 'max:20'],
+            'items.*.candidate_id' => ['required', 'integer', 'min:1'],
+            'items.*.job_id' => ['required', 'integer', 'min:1'],
+            'message' => ['nullable', 'string', 'max:1500'],
+        ]);
+        $message = trim((string) ($data['message'] ?? ''));
+        $created = 0;
+        $skipped = 0;
+
+        foreach (collect($data['items'])->unique(fn ($item) => $item['candidate_id'].'-'.$item['job_id']) as $item) {
+            $jobRow = $this->ownedOpenJob($user, (int) $item['job_id']);
+            $candidateRow = $this->availableCandidate((int) $item['candidate_id']);
+            if (! $candidateRow) {
+                $skipped++;
+                continue;
+            }
+            $this->createInvitation($user, $jobRow, $candidateRow, $message, true) ? $created++ : $skipped++;
+        }
+
+        if ($created === 0) {
+            return back()->with('info', 'Новые приглашения не созданы: профили недоступны или процессы уже активны.');
+        }
+
+        return back()->with('success', "Отправлено приглашений: {$created}. Пропущено: {$skipped}.");
+    }
+
+    private function ownedOpenJob(User $user, int $job): object
+    {
         $jobRow = DB::table('jobs')->where('job_id', $job)->where('status', 'open')->first();
         abort_unless($jobRow, 404);
-
         $allowed = (int) $jobRow->employer_id === (int) $user->getKey()
             || DB::table('company_members')
                 ->where('user_id', $user->getKey())
@@ -103,10 +148,20 @@ class InteractionController extends Controller
                 ->where('active', true)
                 ->exists();
         abort_unless($allowed, 403);
+        return $jobRow;
+    }
 
-        $candidateRow = DB::table('users')->where('user_id', $candidate)->where('role', 'applicant')->first();
-        abort_unless($candidateRow, 404);
+    private function availableCandidate(int $candidate): ?object
+    {
+        $query = DB::table('users')->where('user_id', $candidate)->where('role', 'applicant');
+        if (Schema::hasColumn('users', 'profile_visibility')) $query->where('profile_visibility', 'employers');
+        if (Schema::hasColumn('users', 'consent_processing')) $query->where('consent_processing', true);
+        if (Schema::hasColumn('users', 'consent_publication')) $query->where('consent_publication', true);
+        return $query->first();
+    }
 
+    private function createInvitation(User $user, object $jobRow, object $candidateRow, string $message, bool $bulk): bool
+    {
         $existing = DB::table('interaction_cases')
             ->where('candidate_id', $candidateRow->user_id)
             ->where('job_id', $jobRow->job_id)
@@ -114,10 +169,10 @@ class InteractionController extends Controller
             ->first();
 
         if ($existing && ! in_array($existing->status, ['rejected', 'declined', 'archived'], true)) {
-            return back()->with('info', 'С этим кандидатом уже есть активный процесс по вакансии.');
+            return false;
         }
 
-        DB::transaction(function () use ($user, $jobRow, $candidateRow, $existing, $message) {
+        DB::transaction(function () use ($user, $jobRow, $candidateRow, $existing, $message, $bulk) {
             $caseId = DB::table('interaction_cases')->insertGetId([
                 'candidate_id' => $candidateRow->user_id,
                 'company_id' => $jobRow->company_id,
@@ -141,10 +196,10 @@ class InteractionController extends Controller
             DB::table('case_events')->insert([
                 'case_id' => $caseId,
                 'actor_user_id' => $user->getKey(),
-                'event_type' => 'match_invite',
-                'title' => 'Работодатель отправил адресное приглашение',
+                'event_type' => $bulk ? 'bulk_match_invite' : 'match_invite',
+                'title' => $bulk ? 'Кандидат добавлен в адресную кампанию приглашений' : 'Работодатель отправил адресное приглашение',
                 'details' => $message !== '' ? $message : $jobRow->title,
-                'metadata' => json_encode(['job_id' => $jobRow->job_id, 'has_message' => $message !== ''], JSON_UNESCAPED_UNICODE),
+                'metadata' => json_encode(['job_id' => $jobRow->job_id, 'has_message' => $message !== '', 'bulk' => $bulk], JSON_UNESCAPED_UNICODE),
                 'created_at' => now(),
             ]);
 
@@ -169,6 +224,6 @@ class InteractionController extends Controller
             ]);
         });
 
-        return back()->with('success', 'Адресное приглашение отправлено кандидату.');
+        return true;
     }
 }
