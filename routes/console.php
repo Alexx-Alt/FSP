@@ -34,11 +34,21 @@ Artisan::command('fsp:validate {--json : Print machine-readable JSON}', function
         $predicted = in_array($result['route'], ['invite', 'clarify'], true);
         $score = (int) $result['score'];
 
-        if ($expected) $relevantScores[] = $score; else $irrelevantScores[] = $score;
-        if ($expected && $predicted) $tp++;
-        elseif (! $expected && $predicted) $fp++;
-        elseif (! $expected && ! $predicted) $tn++;
-        else $fn++;
+        if ($expected) {
+            $relevantScores[] = $score;
+        } else {
+            $irrelevantScores[] = $score;
+        }
+
+        if ($expected && $predicted) {
+            $tp++;
+        } elseif (! $expected && $predicted) {
+            $fp++;
+        } elseif (! $expected && ! $predicted) {
+            $tn++;
+        } else {
+            $fn++;
+        }
 
         $rows[] = [
             'candidate' => $pair['candidate_email'],
