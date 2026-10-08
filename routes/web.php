@@ -58,6 +58,7 @@ Route::middleware('auth')->group(function () {
 
     Route::post('/interactions/jobs/{job}/apply', [InteractionController::class, 'apply'])->whereNumber('job')->name('interactions.apply');
     Route::post('/interactions/jobs/{job}/candidates/{candidate}/invite', [InteractionController::class, 'invite'])->whereNumber('job')->whereNumber('candidate')->name('interactions.invite');
+    Route::post('/interactions/invitations/bulk', [InteractionController::class, 'inviteBulk'])->name('interactions.invite.bulk');
     Route::post('/interactions/cases/{case}/accept-application', [ApplicationDecisionController::class, 'accept'])->whereNumber('case')->name('interactions.application.accept');
 
     Route::get('/compare/candidate/companies', [ComparisonController::class, 'companies'])->name('compare.candidate.companies');
