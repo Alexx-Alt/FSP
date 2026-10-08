@@ -9,6 +9,7 @@ import { installFspInteractions } from '@/lib/fspInteractions';
 import { installFspProcessActions } from '@/lib/fspProcessActions';
 import { installFspCompareFeedback } from '@/lib/fspCompareFeedback';
 import { installFspProductPolish } from '@/lib/fspProductPolish';
+import { installFspRoleNav } from '@/lib/fspRoleNav';
 import '../css/fsp-enhancements.css';
 import '../css/fsp-v6-fixes.css';
 import '../css/fsp-process-actions.css';
@@ -21,7 +22,6 @@ import '../css/candidate-settings.css';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
-// Apply the saved light/dark preference before custom FSP pages are mounted.
 initializeTheme();
 
 void createInertiaApp({
@@ -43,15 +43,11 @@ void createInertiaApp({
     withApp: (app) => {
         app.directive('focus', {
             mounted: (el: HTMLElement, shouldFocus) => {
-                if (shouldFocus.value !== false) {
-                    el.focus();
-                }
+                if (shouldFocus.value !== false) el.focus();
             },
         });
     },
-    progress: {
-        color: '#6d28d9',
-    },
+    progress: { color: '#6d28d9' },
 });
 
 initializeFlashToast();
@@ -60,3 +56,4 @@ installFspInteractions();
 installFspProcessActions();
 installFspCompareFeedback();
 installFspProductPolish();
+installFspRoleNav();
