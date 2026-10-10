@@ -64,6 +64,21 @@ return [
             ]) : [],
         ],
 
+        'mysql_private' => [
+            'driver' => 'mysql',
+            'host' => env('PRIVATE_DB_HOST', '127.0.0.1'),
+            'port' => env('PRIVATE_DB_PORT', '3306'),
+            'database' => env('PRIVATE_DB_DATABASE', 'fsp_match_private'),
+            'username' => env('PRIVATE_DB_USERNAME', 'fsp_private'),
+            'password' => env('PRIVATE_DB_PASSWORD', ''),
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'strict' => true,
+            'engine' => null,
+        ],
+
         'mariadb' => [
             'driver' => 'mariadb',
             'url' => env('DB_URL'),
