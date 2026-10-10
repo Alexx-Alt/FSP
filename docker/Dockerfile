@@ -1,7 +1,26 @@
+# syntax=docker/dockerfile:1.7
+
 FROM composer:2 AS vendor
 WORKDIR /app
 COPY composer.json composer.lock ./
-RUN composer install --no-dev --prefer-dist --no-interaction --no-progress --optimize-autoloader --no-scripts
+
+# Кеш и повторы защищают сборку от временных обрывов SSL.
+ENV COMPOSER_CACHE_DIR=/tmp/composer-cache
+ENV COMPOSER_PROCESS_TIMEOUT=1200
+ENV COMPOSER_MAX_PARALLEL_HTTP=4
+
+RUN --mount=type=cache,target=/tmp/composer-cache \
+    set -eu; \
+    attempt=1; \
+    until composer install --no-dev --prefer-dist --no-interaction --no-progress --optimize-autoloader --no-scripts; do \
+        if [ "$attempt" -ge 4 ]; then \
+            echo "Composer не смог скачать зависимости после 4 попыток."; \
+            exit 1; \
+        fi; \
+        echo "Временный сетевой сбой Composer. Повтор $attempt/4 через 10 секунд..."; \
+        attempt=$((attempt + 1)); \
+        sleep 10; \
+    done
 
 FROM php:8.3-cli-alpine
 RUN apk add --no-cache icu-dev libzip-dev oniguruma-dev nodejs npm $PHPIZE_DEPS \
@@ -12,8 +31,7 @@ WORKDIR /var/www/html
 COPY . .
 COPY --from=vendor /app/vendor ./vendor
 
-# Wayfinder's Vite plugin uses the Laravel application while assets are generated,
-# so the frontend build intentionally runs in the PHP image instead of an isolated Node stage.
+# Wayfinder использует Laravel во время сборки интерфейса.
 RUN mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views storage/logs bootstrap/cache \
     && php artisan package:discover --ansi \
     && npm ci \
