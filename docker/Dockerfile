@@ -14,7 +14,7 @@ COPY --from=vendor /app/vendor ./vendor
 
 # Wayfinder's Vite plugin uses the Laravel application while assets are generated,
 # so the frontend build intentionally runs in the PHP image instead of an isolated Node stage.
-RUN mkdir -p storage/framework/{cache,sessions,views} storage/logs bootstrap/cache \
+RUN mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views storage/logs bootstrap/cache \
     && php artisan package:discover --ansi \
     && npm ci \
     && npm run build \
