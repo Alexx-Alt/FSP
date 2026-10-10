@@ -97,6 +97,8 @@ return [
 
     'cipher' => 'AES-256-CBC',
 
+    'private_lookup_key' => env('PRIVATE_LOOKUP_KEY'),
+
     'key' => env('APP_KEY'),
 
     'previous_keys' => [
