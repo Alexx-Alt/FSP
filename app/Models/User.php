@@ -2,10 +2,12 @@
 
 namespace App\Models;
 
+use App\Services\Fsp\PrivateDataService;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Throwable;
 
 #[Fillable([
     'username',
@@ -41,6 +43,23 @@ class User extends Authenticatable
     public function getAuthPasswordName(): string
     {
         return 'password_hash';
+    }
+
+    /**
+     * Колонка email основной БД содержит HMAC для поиска.
+     * Настоящий адрес расшифровывается из отдельной приватной БД.
+     */
+    public function getEmailAttribute(): ?string
+    {
+        if (! $this->exists) {
+            return null;
+        }
+
+        try {
+            return app(PrivateDataService::class)->get((int) $this->getKey())['email'] ?? null;
+        } catch (Throwable) {
+            return null;
+        }
     }
 
     protected function casts(): array
