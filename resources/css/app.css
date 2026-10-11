@@ -122,3 +122,8 @@
 .fsp-shell .case{padding:20px!important}.fsp-shell .case h3{font-size:15px!important}.fsp-shell .case>header p{font-size:10px!important}.fsp-shell .status{font-size:8px!important}
 .fsp-shell .case-grid h4{font-size:11px!important}.fsp-shell .task b{font-size:10px!important}.fsp-shell .task small{font-size:8.5px!important}.fsp-shell .audit b{font-size:10px!important}.fsp-shell .audit p{font-size:9px!important}
 @media(max-width:700px){.fsp-shell .container,.fsp-shell .topbar-inner{width:min(calc(100% - 26px),1380px)!important}}
+
+
+/* Официальный логотип ФСП в шапке ИТ-МЕТЧ. */
+.fsp-brand-logo{display:block;width:clamp(150px,18vw,246px);height:auto;object-fit:contain}
+@media(max-width:700px){.fsp-brand-logo{width:140px}}
