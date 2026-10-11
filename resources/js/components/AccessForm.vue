@@ -26,7 +26,7 @@ function submit() {
         <header class="public-topbar">
             <div class="public-topbar-inner">
                 <Link href="/" class="public-brand">
-                    <img src="/brand/fsp-logo.svg" alt="ФСП" class="access-brand-logo" />
+                    <img src="/brand/fsp-mark.svg" alt="ФСП" class="access-brand-logo" />
                     <span>
                         <strong>ИТ-МЕТЧ</strong>
                         <small>Федерация спортивного программирования</small>
