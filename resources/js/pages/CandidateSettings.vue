@@ -7,7 +7,7 @@ const save=()=>form.patch('/candidate/settings',{preserveScroll:true});
 <template>
 <Head title="Приватность и FSP ID" />
 <div class="candidate-settings-shell">
-<header><div class="candidate-settings-top"><Link href="/candidate" class="candidate-brand"><span>F</span><div><strong>ИТ-MATCH PRO</strong><small>Настройки кандидата</small></div></Link><Link href="/candidate">← Вернуться в кабинет</Link></div></header>
+<header><div class="candidate-settings-top"><Link href="/candidate" class="candidate-brand platform-brand" aria-label="ИТ-МЕТЧ"><img src="/brand/fsp-mark.svg" alt="ФСП" /><strong>ИТ-МЕТЧ</strong></Link><Link href="/candidate">← Вернуться в кабинет</Link></div></header>
 <main>
 <section class="candidate-settings-hero"><span>ПРИВАТНОСТЬ · 152-ФЗ · FSP ID</span><h1>Вы контролируете, <em>что видит работодатель</em>.</h1><p>Контакты всё равно остаются закрытыми до взаимного шага. Здесь регулируется публикация профессионального профиля и связь с идентификатором ФСП.</p></section>
 <form @submit.prevent="save">
