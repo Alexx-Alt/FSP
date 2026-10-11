@@ -94,7 +94,7 @@ const onFullscreen=()=>{if(!document.fullscreenElement)recordIntegrity('fullscre
 function bindIntegrity(){ if(integrityBound)return; integrityBound=true; document.addEventListener('visibilitychange',onVisibility); window.addEventListener('blur',onBlur); document.addEventListener('copy',onCopy); document.addEventListener('paste',onPaste); document.addEventListener('contextmenu',onContext); document.addEventListener('keydown',onKey,true); document.addEventListener('fullscreenchange',onFullscreen); }
 function unbindIntegrity(){ if(!integrityBound)return; integrityBound=false; document.removeEventListener('visibilitychange',onVisibility); window.removeEventListener('blur',onBlur); document.removeEventListener('copy',onCopy); document.removeEventListener('paste',onPaste); document.removeEventListener('contextmenu',onContext); document.removeEventListener('keydown',onKey,true); document.removeEventListener('fullscreenchange',onFullscreen); }
 function startAssessment(){ assessmentActive.value=true; secondsLeft.value=15*60; Object.keys(selectedAnswers).forEach(k=>delete selectedAnswers[k]); Object.keys(answerStarted).forEach(k=>delete answerStarted[k]); props.assessment.questionSet.forEach(q=>answerStarted[String(q.id)]=Date.now()); integrityEvents.value=[]; bindIntegrity(); if(timer)clearInterval(timer); timer=setInterval(()=>{secondsLeft.value--; if(secondsLeft.value<=0)submitAssessment();},1000); }
-function submitAssessment(){ if(!assessmentActive.value||answeredCount.value<5)return; assessmentActive.value=false; if(timer){clearInterval(timer);timer=null} unbindIntegrity(); const now=Date.now(); const answers=Object.entries(selectedAnswers).map(([question_id,selected_index])=>({question_id,selected_index,response_ms:Math.max(0,now-(answerStarted[question_id]??now))})); router.post('/candidate/assessment',{category:assessmentCategory.value,desired_grade:assessmentGrade.value,answers,integrity_events:integrityEvents.value},{preserveScroll:true}); }
+function submitAssessment(){ if(!assessmentActive.value||answeredCount.value<5)return; assessmentActive.value=false; if(timer){clearInterval(timer);timer=null} unbindIntegrity(); const now=Date.now(); const answers=Object.entries(selectedAnswers).map(([question_id,selected_index])=>({question_id,selected_index,response_ms:Math.max(0,now-(answerStarted[question_id]??now))})); router.post('/candidate/assessment',{category:assessmentCategory.value,desired_grade:assessmentGrade.value,answers,integrity_events:integrityEvents.value.map(event=>({type:event.type,weight:event.weight,metadata:JSON.stringify(event.metadata??{})}))},{preserveScroll:true}); }
 onBeforeUnmount(()=>{if(timer)clearInterval(timer);unbindIntegrity()});
 </script>
 
@@ -102,7 +102,7 @@ onBeforeUnmount(()=>{if(timer)clearInterval(timer);unbindIntegrity()});
 <Head title="Кабинет кандидата" />
 <div class="candidate-shell">
     <header class="candidate-topbar"><div class="candidate-topbar-inner">
-        <Link href="/" class="candidate-brand"><span>F</span><div><strong>ИТ-MATCH PRO</strong><small>профессиональный паспорт</small></div></Link>
+        <Link href="/" class="candidate-brand"><span>F</span><div><strong>ИТ-МЕТЧ</strong><small>профессиональный паспорт</small></div></Link>
         <nav><button v-for="item in tabs" :key="item[0]" :class="{active:tab===item[0]}" @click="tab=item[0]">{{ item[1] }}</button></nav>
         <div class="candidate-actions"><Link href="/workspace" class="ghost-link">Аналитика</Link><button @click="logout">Выйти</button></div>
     </div></header>
