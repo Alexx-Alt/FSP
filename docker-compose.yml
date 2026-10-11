@@ -48,7 +48,7 @@ services:
     env_file:
       - .env
     environment:
-      APP_NAME: "ИТ-MATCH PRO"
+      APP_NAME: "ИТ-МЕТЧ"
       APP_ENV: local
       APP_DEBUG: "true"
       APP_URL: http://127.0.0.1:8000
