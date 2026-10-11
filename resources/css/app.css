@@ -127,3 +127,64 @@
 /* Официальный логотип ФСП в шапке ИТ-МЕТЧ. */
 .fsp-brand-logo{display:block;width:clamp(150px,18vw,246px);height:auto;object-fit:contain}
 @media(max-width:700px){.fsp-brand-logo{width:140px}}
+
+
+/* Unified platform header */
+.platform-brand {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 11px !important;
+    color: inherit !important;
+    text-decoration: none !important;
+    white-space: nowrap;
+}
+.platform-brand img {
+    display: block;
+    width: 38px !important;
+    height: 38px !important;
+    object-fit: contain;
+    flex: 0 0 38px;
+}
+.platform-brand strong {
+    display: block;
+    margin: 0 !important;
+    color: inherit;
+    font-size: 15px !important;
+    line-height: 1 !important;
+    font-weight: 850;
+    letter-spacing: -.025em;
+}
+.public-topbar,
+.candidate-topbar,
+.employer-jobs-top,
+.topbar,
+.live-topbar,
+.candidate-settings-shell > header {
+    min-height: 76px;
+    border-bottom: 1px solid var(--fsp-border, #dce3de);
+    background: color-mix(in srgb, var(--fsp-surface, #fff) 92%, transparent) !important;
+    backdrop-filter: blur(18px);
+}
+.public-topbar-inner,
+.candidate-topbar-inner,
+.employer-jobs-top-inner,
+.topbar-inner,
+.live-topbar-inner,
+.candidate-settings-top,
+.header {
+    min-height: 76px !important;
+    align-items: center !important;
+}
+.dark .public-topbar,
+.dark .candidate-topbar,
+.dark .employer-jobs-top,
+.dark .topbar,
+.dark .live-topbar,
+.dark .candidate-settings-shell > header {
+    background: rgba(21, 27, 24, .94) !important;
+    border-color: var(--fsp-border, #2b3731) !important;
+}
+@media (max-width: 700px) {
+    .platform-brand img { width: 34px !important; height: 34px !important; flex-basis: 34px; }
+    .platform-brand strong { font-size: 14px !important; }
+}
