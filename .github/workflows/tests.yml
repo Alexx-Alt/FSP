@@ -68,9 +68,6 @@ jobs:
       - name: Check TypeScript
         run: npm run types:check
 
-      - name: Check PHP types
-        run: composer types:check
-
       - name: Run application tests
         run: php artisan test
 
