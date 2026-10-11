@@ -41,7 +41,7 @@ function logout(){router.post('/logout');}
 <Head title="Вакансии работодателя" />
 <div class="employer-jobs-shell">
 <header class="employer-jobs-top"><div class="employer-jobs-top-inner">
-    <Link href="/" class="candidate-brand"><span>F</span><div><strong>ИТ-MATCH PRO</strong><small>Employer Studio</small></div></Link>
+    <Link href="/" class="candidate-brand platform-brand" aria-label="ИТ-МЕТЧ"><img src="/brand/fsp-mark.svg" alt="ФСП" /><strong>ИТ-МЕТЧ</strong></Link>
     <nav><Link href="/workspace">Подбор</Link><Link href="/employer/jobs" class="active">Вакансии</Link><Link href="/workspace">Процессы</Link><Link href="/workspace">Аналитика</Link></nav>
     <div class="employer-jobs-actions"><span>{{company.name}}</span><button @click="logout">Выйти</button></div>
 </div></header>
