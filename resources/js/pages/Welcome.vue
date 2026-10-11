@@ -70,12 +70,9 @@ const filteredResumes = computed(() => {
     <div class="fsp-public">
         <header class="public-topbar">
             <div class="public-topbar-inner">
-                <Link href="/" class="public-brand">
-                    <span class="public-mark">F</span>
-                    <span>
-                        <strong>ИТ-МЕТЧ</strong>
-                        <small>Федерация спортивного программирования</small>
-                    </span>
+                <Link href="/" class="public-brand platform-brand" aria-label="ИТ-МЕТЧ">
+                    <img src="/brand/fsp-mark.svg" alt="ФСП" />
+                    <strong>ИТ-МЕТЧ</strong>
                 </Link>
 
                 <nav class="public-nav" aria-label="Основная навигация">
