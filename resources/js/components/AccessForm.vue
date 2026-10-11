@@ -25,14 +25,7 @@ function submit() {
     <div class="fsp-public access-shell">
         <header class="public-topbar">
             <div class="public-topbar-inner">
-                <Link href="/" class="public-brand">
-                    <img src="/brand/fsp-mark.svg" alt="ФСП" class="access-brand-logo" />
-                    <span>
-                        <strong>ИТ-МЕТЧ</strong>
-                        <small>Федерация спортивного программирования</small>
-                    </span>
-                </Link>
-                <Link href="/" class="btn btn-soft">На главную</Link>
+                <Link href="/" class="public-brand platform-brand" aria-label="ИТ-МЕТЧ"><img src="/brand/fsp-mark.svg" alt="ФСП" /><strong>ИТ-МЕТЧ</strong></Link>\n                <Link href="/" class="btn btn-soft">На главную</Link>
             </div>
         </header>
 
