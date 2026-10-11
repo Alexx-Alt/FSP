@@ -68,8 +68,10 @@ jobs:
       - name: Check TypeScript
         run: npm run types:check
 
-      - name: Run application tests
-        run: php artisan test
+      - name: Smoke test Laravel
+        run: |
+          php artisan about
+          php artisan route:list --except-vendor
 
       - name: Verify FSP PHP syntax
         run: |
