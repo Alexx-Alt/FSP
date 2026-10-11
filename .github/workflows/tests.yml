@@ -65,8 +65,14 @@ jobs:
           if-no-files-found: ignore
           retention-days: 3
 
-      - name: Run CI Checks
-        run: composer ci:check
+      - name: Check TypeScript
+        run: npm run types:check
+
+      - name: Check PHP types
+        run: composer types:check
+
+      - name: Run application tests
+        run: php artisan test
 
       - name: Verify FSP PHP syntax
         run: |
