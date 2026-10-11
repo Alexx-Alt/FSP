@@ -103,7 +103,7 @@ onBeforeUnmount(()=>{if(timer)clearInterval(timer);unbindIntegrity()});
 <Head title="Кабинет кандидата" />
 <div class="candidate-shell" :class="{ 'is-returning': returningUser }">
     <header class="candidate-topbar"><div class="candidate-topbar-inner">
-        <Link href="/" class="candidate-brand" aria-label="ИТ-МЕТЧ"><img src="/brand/fsp-mark.svg" alt="ФСП" /><strong>ИТ-МЕТЧ</strong></Link>
+        <Link href="/" class="candidate-brand platform-brand" aria-label="ИТ-МЕТЧ"><img src="/brand/fsp-mark.svg" alt="ФСП" /><strong>ИТ-МЕТЧ</strong></Link>
         <nav><button v-for="item in tabs" :key="item[0]" :class="{active:tab===item[0]}" @click="tab=item[0]">{{ item[1] }}</button></nav>
         <div class="candidate-actions"><Link href="/workspace" class="ghost-link">Аналитика</Link><button @click="logout">Выйти</button></div>
     </div></header>
