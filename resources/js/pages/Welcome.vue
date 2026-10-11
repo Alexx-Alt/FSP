@@ -65,7 +65,7 @@ const filteredResumes = computed(() => {
 </script>
 
 <template>
-    <Head title="FSP Match" />
+    <Head title="ИТ-МЕТЧ" />
 
     <div class="fsp-public">
         <header class="public-topbar">
@@ -73,7 +73,7 @@ const filteredResumes = computed(() => {
                 <Link href="/" class="public-brand">
                     <span class="public-mark">F</span>
                     <span>
-                        <strong>ИТ-MATCH PRO</strong>
+                        <strong>ИТ-МЕТЧ</strong>
                         <small>Федерация спортивного программирования</small>
                     </span>
                 </Link>
@@ -98,7 +98,7 @@ const filteredResumes = computed(() => {
             <div class="public-container">
                 <section class="hero-calm">
                     <div class="hero-copy">
-                        <div class="eyebrow">FSP Match · прямой IT-подбор</div>
+                        <div class="eyebrow">ИТ-МЕТЧ · прямой IT-подбор</div>
                         <h1>Найм по проверяемым<br><em>сигналам.</em></h1>
                         <p class="lead">
                             Кандидат выбирает направление и заявляет грейд. Assessment его подтверждает.
@@ -148,7 +148,7 @@ const filteredResumes = computed(() => {
                         </div>
                     </div>
                     <div class="comparison">
-                        <div class="comparison-row"><div></div><div>FSP Match</div><div>Обычный job board</div></div>
+                        <div class="comparison-row"><div></div><div>ИТ-МЕТЧ</div><div>Обычный job board</div></div>
                         <div class="comparison-row"><div>Квалификация</div><div>assessment + статус грейда</div><div>резюме и самоописание</div></div>
                         <div class="comparison-row"><div>Подбор</div><div>категория → fit → evidence → действие</div><div>поиск и фильтры</div></div>
                         <div class="comparison-row"><div>Контакт</div><div>работодатель приглашает первым</div><div>кандидат начинает с отклика</div></div>
@@ -170,7 +170,7 @@ const filteredResumes = computed(() => {
                     <div class="section-head">
                         <div>
                             <div class="eyebrow">Прямой рынок</div>
-                            <h2>{{ role === 'applicant' ? 'Вакансии внутри FSP Match.' : 'Кандидаты внутри FSP Match.' }}</h2>
+                            <h2>{{ role === 'applicant' ? 'Вакансии внутри ИТ-МЕТЧ.' : 'Кандидаты внутри ИТ-МЕТЧ.' }}</h2>
                             <p>Собственный контур платформы без импорта чужих вакансий.</p>
                         </div>
                         <span class="badge">{{ role === 'applicant' ? filteredJobs.length : filteredResumes.length }} записей</span>
@@ -212,7 +212,7 @@ const filteredResumes = computed(() => {
             </div>
         </main>
 
-        <footer class="public-footer"><div class="public-container footer-inner"><span>FSP · ИТ-MATCH PRO</span><div class="footer-links"><span>Explainable Match</span><span>Evidence Tree</span><span>3-срезная аналитика</span></div></div></footer>
+        <footer class="public-footer"><div class="public-container footer-inner"><span>FSP · ИТ-МЕТЧ</span><div class="footer-links"><span>Explainable Match</span><span>Evidence Tree</span><span>3-срезная аналитика</span></div></div></footer>
     </div>
 </template>
 
