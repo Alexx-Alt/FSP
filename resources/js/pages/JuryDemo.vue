@@ -23,7 +23,7 @@ const logout = () => router.post('/logout');
 <div class="jury-shell">
     <header class="topbar jury-topbar">
         <div class="topbar-inner jury-topbar-inner">
-            <Link href="/" class="brand"><b>F</b><span><strong>ИТ-MATCH PRO</strong><small>режим демонстрации для жюри</small></span></Link>
+            <Link href="/" class="brand platform-brand" aria-label="ИТ-МЕТЧ"><img src="/brand/fsp-mark.svg" alt="ФСП" /><strong>ИТ-МЕТЧ</strong></Link>
             <nav>
                 <button :class="{active:tab==='overview'}" @click="tab='overview'">Сводка</button>
                 <button :class="{active:tab==='criteria'}" @click="tab='criteria'">Критерии</button>
