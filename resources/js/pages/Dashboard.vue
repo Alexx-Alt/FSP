@@ -74,15 +74,7 @@ function registrationDate(value: string | null): string {
 
     <div class="main-page fsp-background">
         <header class="header">
-            <Link href="/" class="logo">
-                <span class="logo-icon">ФСП</span>
-                <span class="logo-text">
-                    <strong>ИТ-MATCH <span class="logo-pro">PRO</span></strong>
-                    <span class="logo-description">Личный кабинет</span>
-                </span>
-            </Link>
-
-            <Link href="/" class="navigation-link">На главную</Link>
+            <Link href="/" class="logo platform-brand" aria-label="ИТ-МЕТЧ"><img src="/brand/fsp-mark.svg" alt="ФСП" /><strong>ИТ-МЕТЧ</strong></Link>\n        <Link href="/" class="navigation-link">На главную</Link>
 
             <button
                 class="account-button"
