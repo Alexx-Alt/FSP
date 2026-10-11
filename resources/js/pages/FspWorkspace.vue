@@ -45,7 +45,7 @@ function respond(id:number,decision:'accept'|'decline'){router.post(`/workspace/
 <Head title="ИТ-MATCH PRO · Workspace" />
 <div class="fsp-shell">
   <header class="topbar"><div class="topbar-inner">
-    <Link href="/" class="brand" aria-label="ИТ-МЕТЧ"><img src="/brand/fsp-mark.svg" alt="ФСП" /><span><strong>ИТ-MATCH PRO</strong><small>Федерация спортивного программирования</small></span></Link>
+    <Link href="/" class="brand platform-brand" aria-label="ИТ-МЕТЧ"><img src="/brand/fsp-mark.svg" alt="ФСП" /><strong>ИТ-МЕТЧ</strong></Link>
     <nav><button v-for="t in tabs" :key="t[0]" :class="{active:tab===t[0]}" @click="tab=t[0]">{{t[1]}}</button></nav>
     <span class="role">{{mode==='candidate'?'Кандидат':mode==='employer'?'Работодатель':'Администратор'}}</span><button class="icon" @click="logout">↗</button>
   </div></header>
