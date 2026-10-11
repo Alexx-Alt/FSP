@@ -79,7 +79,7 @@ onBeforeUnmount(()=>{if(timer)clearInterval(timer);unbind()});
 <template>
 <Head title="Проверка уровня · live" />
 <div class="live-shell">
-  <header class="live-topbar"><div class="live-topbar-inner"><div class="live-brand"><b>F</b><span><strong>ИТ-MATCH PRO</strong><small>live assessment</small></span></div><div class="live-session"><span>{{session.category}} · {{gradeName}}</span><strong v-if="active">{{timeLabel}}</strong><button @click="leave">Выйти</button></div></div></header>
+  <header class="live-topbar"><div class="live-topbar-inner"><div class="live-brand platform-brand" aria-label="ИТ-МЕТЧ"><img src="/brand/fsp-mark.svg" alt="ФСП" /><strong>ИТ-МЕТЧ</strong></div><div class="live-session"><span>{{session.category}} · {{gradeName}}</span><strong v-if="active">{{timeLabel}}</strong><button @click="leave">Выйти</button></div></div></header>
   <main class="live-container">
     <section v-if="!active&&!finished" class="live-intro card-live"><span class="eyebrow">Проверка уровня · защищённая сессия</span><h1>Один вопрос за раз.<br><em>Сигналы — отдельно от результата.</em></h1><p>Тест подтверждает заявленный грейд. Технические сигналы не считаются автоматическим доказательством списывания: при повышенном риске попытка уходит на ручную проверку.</p><div class="rule-grid-live"><span v-for="r in session.rules" :key="r">{{r}}</span></div><div class="live-start-meta"><span>15 минут</span><span>{{session.questions.length}} заданий</span><span>1 практическая задача</span><span>fullscreen + integrity log</span></div><button class="start-live" @click="start">Начать и перейти в полноэкранный режим</button></section>
 
