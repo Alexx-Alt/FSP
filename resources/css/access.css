@@ -1,37 +1,72 @@
-/* Размещение формы */
-.access-page {
+.access-shell {
+    min-height: 100vh;
+    background: #f6f7f4;
+    color: #17211c;
+}
+
+.access-brand-logo {
+    display: block;
+    width: 116px;
+    height: 38px;
+    object-fit: contain;
+    object-position: left center;
+}
+
+.access-main {
+    width: min(calc(100% - 48px), 1180px);
+    min-height: calc(100vh - 84px);
+    margin: 0 auto;
     display: grid;
-    place-items: center;
-    padding: 40px 20px;
+    grid-template-columns: minmax(0, 1fr) minmax(360px, 470px);
+    align-items: center;
+    gap: 84px;
+    padding: 64px 0;
+}
+
+.access-copy h1 {
+    max-width: 680px;
+    margin: 18px 0 22px;
+    font-size: clamp(42px, 5.2vw, 72px);
+    line-height: .98;
+    letter-spacing: -.055em;
+}
+
+.access-copy > p {
+    max-width: 620px;
+    color: #617068;
+    font-size: 17px;
+    line-height: 1.7;
+}
+
+.access-points {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 22px;
+    margin-top: 30px;
+    color: #355e4a;
+    font-size: 13px;
+    font-weight: 700;
 }
 
 .access-card {
     width: 100%;
-    max-width: 480px;
-    padding: 36px;
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    padding: 38px;
+    border: 1px solid #dce3de;
     border-radius: 24px;
-    background: rgba(10, 14, 32, 0.94);
+    background: #fff;
+    box-shadow: 0 24px 70px rgba(28, 52, 40, .1);
 }
 
-.access-logo {
-    color: #a78bfa;
-    font-size: 13px;
-    font-weight: 800;
-    text-decoration: none;
-}
-
-.access-card h1 {
-    margin: 24px 0 12px;
-    font-size: 30px;
-    font-weight: 800;
-    line-height: 1.2;
-    overflow-wrap: anywhere;
+.access-card h2 {
+    margin: 12px 0 8px;
+    font-size: 32px;
+    line-height: 1.1;
+    letter-spacing: -.035em;
 }
 
 .access-description,
 .access-bottom {
-    color: #94a3b8;
+    color: #69766f;
     font-size: 14px;
     line-height: 1.6;
 }
@@ -43,124 +78,94 @@
     margin-top: 26px;
 }
 
-/* Поля формы */
 .access-field {
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    color: #cbd5e1;
+    gap: 7px;
+    color: #34433b;
     font-size: 13px;
+    font-weight: 700;
 }
 
 .access-field input,
 .access-field select {
     width: 100%;
     padding: 13px 14px;
-    border: 1px solid rgba(255, 255, 255, 0.14);
-    border-radius: 12px;
-    background: #11182c;
-    color: white;
+    border: 1px solid #ccd6d0;
+    border-radius: 11px;
+    background: #fbfcfa;
+    color: #17211c;
     font: inherit;
+    font-weight: 500;
+    transition: border-color .18s ease, box-shadow .18s ease;
 }
 
-.access-field input:focus-visible,
-.access-field select:focus-visible {
-    outline: 2px solid #a78bfa;
-    outline-offset: 2px;
+.access-field input:focus,
+.access-field select:focus {
+    outline: none;
+    border-color: #24734d;
+    box-shadow: 0 0 0 3px rgba(36, 115, 77, .12);
 }
 
 .access-error {
-    color: #fda4af;
+    color: #b42318;
     font-size: 12px;
+    font-weight: 500;
 }
 
-.access-error:empty {
-    display: none;
-}
+.access-error:empty { display: none; }
 
 .access-checkbox {
     display: flex;
     align-items: center;
-    gap: 10px;
-    color: #cbd5e1;
+    gap: 9px;
+    color: #56645d;
     font-size: 13px;
 }
 
-.access-checkbox input {
-    accent-color: #7c3aed;
-}
+.access-checkbox input { accent-color: #24734d; }
 
-/* Основная кнопка */
 .access-submit {
-    display: block;
     width: 100%;
     padding: 14px 18px;
-    border: none;
-    border-radius: 12px;
-    background: linear-gradient(90deg, #4f46e5, #7c3aed, #db2777);
-    color: white;
+    border: 0;
+    border-radius: 11px;
+    background: #1f6b47;
+    color: #fff;
     font: inherit;
     font-size: 14px;
-    font-weight: 700;
-    text-align: center;
-    text-decoration: none;
+    font-weight: 800;
     cursor: pointer;
+    transition: transform .18s ease, background .18s ease;
 }
 
-.access-submit:disabled,
-.access-exit:disabled {
-    opacity: 0.6;
-    cursor: wait;
-}
+.access-submit:hover { background: #18583a; transform: translateY(-1px); }
+.access-submit:disabled { opacity: .55; cursor: wait; transform: none; }
 
 .access-bottom {
-    margin: 24px 0 0;
+    margin: 23px 0 0;
     text-align: center;
 }
 
 .access-bottom a {
-    margin-left: 6px;
-    color: #c4b5fd;
+    margin-left: 5px;
+    color: #1f6b47;
+    font-weight: 800;
     text-decoration: none;
 }
 
-/* Данные кабинета */
-.account-details {
-    display: grid;
-    gap: 18px;
-    margin: 28px 0;
-}
-
-.account-details dt {
-    margin-bottom: 6px;
-    color: #94a3b8;
-    font-size: 12px;
-}
-
-.account-details dd {
-    margin: 0;
-    color: white;
-    overflow-wrap: anywhere;
-}
-
-.access-exit {
-    width: 100%;
-    margin-top: 14px;
-    padding: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.14);
-    border-radius: 12px;
-    background: transparent;
-    color: #cbd5e1;
-    font: inherit;
-    cursor: pointer;
-}
-
-@media (max-width: 480px) {
-    .access-card {
-        padding: 24px;
+@media (max-width: 850px) {
+    .access-main {
+        grid-template-columns: 1fr;
+        gap: 34px;
+        padding: 42px 0;
     }
+    .access-copy h1 { font-size: clamp(38px, 10vw, 58px); }
+}
 
-    .access-card h1 {
-        font-size: 26px;
-    }
+@media (max-width: 560px) {
+    .access-main { width: min(calc(100% - 26px), 1180px); }
+    .access-copy { display: none; }
+    .access-card { padding: 26px 22px; }
+    .access-brand-logo { width: 92px; }
 }
