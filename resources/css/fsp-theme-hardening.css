@@ -10,3 +10,94 @@ html.dark .fsp-public .preview-card,html.dark .fsp-public .panel,html.dark .fsp-
 html.dark .fsp-public input,html.dark .fsp-public select,html.dark .fsp-public textarea,html[data-theme="midnight"] .fsp-public input,html[data-theme="midnight"] .fsp-public select,html[data-theme="midnight"] .fsp-public textarea,html.dark .candidate-shell input,html.dark .candidate-shell select,html.dark .candidate-shell textarea,html[data-theme="midnight"] .candidate-shell input,html[data-theme="midnight"] .candidate-shell select,html[data-theme="midnight"] .candidate-shell textarea,html.dark .fsp-shell input,html.dark .fsp-shell select,html.dark .fsp-shell textarea,html[data-theme="midnight"] .fsp-shell input,html[data-theme="midnight"] .fsp-shell select,html[data-theme="midnight"] .fsp-shell textarea{background:#1b1722!important;border-color:#322a3d!important;color:#f7f3fb!important}
 html.dark .fsp-public .cta-panel,html[data-theme="midnight"] .fsp-public .cta-panel{background:linear-gradient(135deg,#15121c,#241b35)!important}
 html.dark .fsp-public .preview-note,html.dark .fsp-public .company-pill,html.dark .fsp-public .skills span,html.dark .candidate-shell .axis span,html.dark .candidate-shell .rule-grid span,html.dark .fsp-shell .axes span,html[data-theme="midnight"] .fsp-public .preview-note,html[data-theme="midnight"] .fsp-public .company-pill,html[data-theme="midnight"] .fsp-public .skills span,html[data-theme="midnight"] .candidate-shell .axis span,html[data-theme="midnight"] .candidate-shell .rule-grid span,html[data-theme="midnight"] .fsp-shell .axes span{background:#1d1826!important;color:#aaa1b5!important}
+
+
+/* 2026 returning-user and cross-theme brand pass */
+:root {
+  color-scheme: light;
+  --fsp-page: #f6f7f4;
+  --fsp-surface: #ffffff;
+  --fsp-surface-2: #f0f3f1;
+  --fsp-text: #17211c;
+  --fsp-muted: #617068;
+  --fsp-border: #dce3de;
+}
+.dark {
+  color-scheme: dark;
+  --fsp-page: #0d1210;
+  --fsp-surface: #151b18;
+  --fsp-surface-2: #1c2420;
+  --fsp-text: #eef4f0;
+  --fsp-muted: #a6b3ac;
+  --fsp-border: #2b3731;
+}
+.dark body,
+.dark .access-shell,
+.dark .candidate-shell,
+.dark .fsp-shell {
+  background: var(--fsp-page) !important;
+  color: var(--fsp-text) !important;
+}
+.dark .access-card,
+.dark .card,
+.dark .candidate-kpis > article,
+.dark .candidate-topbar,
+.dark .topbar,
+.dark .alerts {
+  background: var(--fsp-surface) !important;
+  border-color: var(--fsp-border) !important;
+  color: var(--fsp-text) !important;
+}
+.dark input,
+.dark select,
+.dark textarea,
+.dark .candidate-shell button:not(.primary),
+.dark .fsp-shell button:not(.primary) {
+  background-color: var(--fsp-surface-2) !important;
+  border-color: var(--fsp-border) !important;
+  color: var(--fsp-text) !important;
+}
+.dark .access-copy > p,
+.dark .access-description,
+.dark .access-bottom,
+.dark .candidate-shell p,
+.dark .candidate-shell small,
+.dark .fsp-shell p,
+.dark .fsp-shell small {
+  color: var(--fsp-muted) !important;
+}
+.dark .candidate-topbar,
+.dark .topbar {
+  box-shadow: 0 1px 0 var(--fsp-border);
+}
+.dark table th,
+.dark .proof > div,
+.dark .city-grid article,
+.dark .case-grid > section {
+  background: var(--fsp-surface-2) !important;
+}
+.dark .candidate-shell a,
+.dark .fsp-shell a { color: inherit; }
+.dark ::placeholder { color: #7f8b84; opacity: 1; }
+
+.brand img,
+.candidate-brand img {
+  width: 38px;
+  height: 38px;
+  object-fit: contain;
+  flex: 0 0 auto;
+}
+.brand,
+.candidate-brand { min-width: auto !important; }
+.brand > strong,
+.candidate-brand > strong {
+  font-size: 15px;
+  letter-spacing: -.02em;
+}
+.candidate-shell.is-returning .candidate-hero > div:first-child > .eyebrow,
+.candidate-shell.is-returning .candidate-hero > div:first-child > p {
+  display: none;
+}
+.candidate-shell.is-returning .main-grid {
+  grid-template-columns: 1fr;
+}
