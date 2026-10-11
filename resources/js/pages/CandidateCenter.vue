@@ -21,6 +21,7 @@ const props = defineProps<{
 }>();
 
 const tab = ref<Tab>('overview');
+const returningUser = computed(() => (props.assessment.history?.length ?? 0) > 0 || (props.workspace.summary?.activeCases ?? 0) > 0 || (props.workspace.summary?.confirmedSkills ?? 0) > 0);
 const tabs: Array<[Tab,string]> = [
     ['overview','Обзор'],['matches','Подбор'],['passport','Паспорт'],['skills','Карта навыков'],
     ['career','Career Compass'],['assessment','Проверка уровня'],['fsp','FSP ID'],['processes','Процессы'],
@@ -100,9 +101,9 @@ onBeforeUnmount(()=>{if(timer)clearInterval(timer);unbindIntegrity()});
 
 <template>
 <Head title="Кабинет кандидата" />
-<div class="candidate-shell">
+<div class="candidate-shell" :class="{ 'is-returning': returningUser }">
     <header class="candidate-topbar"><div class="candidate-topbar-inner">
-        <Link href="/" class="candidate-brand"><span>F</span><div><strong>ИТ-МЕТЧ</strong><small>профессиональный паспорт</small></div></Link>
+        <Link href="/" class="candidate-brand" aria-label="ИТ-МЕТЧ"><img src="/brand/fsp-mark.svg" alt="ФСП" /><strong>ИТ-МЕТЧ</strong></Link>
         <nav><button v-for="item in tabs" :key="item[0]" :class="{active:tab===item[0]}" @click="tab=item[0]">{{ item[1] }}</button></nav>
         <div class="candidate-actions"><Link href="/workspace" class="ghost-link">Аналитика</Link><button @click="logout">Выйти</button></div>
     </div></header>
@@ -112,7 +113,7 @@ onBeforeUnmount(()=>{if(timer)clearInterval(timer);unbindIntegrity()});
 
         <template v-if="tab==='overview'">
             <section class="candidate-kpis"><article><span>Assessment</span><strong>{{ workspace.summary.assessmentScore ?? '—' }}</strong><small>из 100</small></article><article><span>Peer rank</span><strong>#{{ workspace.summary.peerRank ?? '—' }}</strong><small>в своей категории</small></article><article><span>FSP evidence</span><strong>{{ workspace.summary.fspEvidence ?? 0 }}</strong><small>подтверждений</small></article><article><span>Процессы</span><strong>{{ workspace.summary.activeCases ?? 0 }}</strong><small>активных</small></article></section>
-            <div class="candidate-grid main-grid"><section class="card"><span class="eyebrow">Маршрут развития</span><h2>Что сделать дальше</h2><div class="action-list"><button @click="tab='assessment'"><i>01</i><span><b>Подтвердить грейд</b><small>адаптивный assessment + test-retest</small></span><em>→</em></button><button @click="tab='skills'"><i>02</i><span><b>Закрыть gaps в навыках</b><small>confirmed / partial / claimed / unknown</small></span><em>→</em></button><button @click="tab='career'"><i>03</i><span><b>Проверить направление</b><small>Career Compass для выбора специализации</small></span><em>→</em></button><button @click="tab='matches'"><i>04</i><span><b>Посмотреть подбор</b><small>score + причины + пробелы</small></span><em>→</em></button></div></section><aside class="stack"><section class="card"><span class="eyebrow">Top Match</span><h2>Ближайшие вакансии</h2><button v-for="m in (workspace.matches??[]).slice(0,4)" :key="m.jobId" class="mini-match" @click="tab='matches'"><span><b>{{m.title}}</b><small>{{m.company}} · {{m.city}}</small></span><strong>{{m.score}}</strong></button></section><section class="card"><span class="eyebrow">Рынок</span><h2>Ваш контекст</h2><div class="stat-row"><span>Категория</span><b>{{workspace.summary.category??'—'}}</b></div><div class="stat-row"><span>Ожидание</span><b>{{money(auth.user.salary_expected)}}</b></div><div class="stat-row"><span>Формат</span><b>{{auth.user.work_format??'any'}}</b></div></section></aside></div>
+            <div class="candidate-grid main-grid"><section class="card onboarding-card" v-if="!returningUser"><span class="eyebrow">Маршрут развития</span><h2>Что сделать дальше</h2><div class="action-list"><button @click="tab='assessment'"><i>01</i><span><b>Подтвердить грейд</b><small>адаптивный assessment + test-retest</small></span><em>→</em></button><button @click="tab='skills'"><i>02</i><span><b>Закрыть gaps в навыках</b><small>confirmed / partial / claimed / unknown</small></span><em>→</em></button><button @click="tab='career'"><i>03</i><span><b>Проверить направление</b><small>Career Compass для выбора специализации</small></span><em>→</em></button><button @click="tab='matches'"><i>04</i><span><b>Посмотреть подбор</b><small>score + причины + пробелы</small></span><em>→</em></button></div></section><aside class="stack"><section class="card"><span class="eyebrow">Top Match</span><h2>Ближайшие вакансии</h2><button v-for="m in (workspace.matches??[]).slice(0,4)" :key="m.jobId" class="mini-match" @click="tab='matches'"><span><b>{{m.title}}</b><small>{{m.company}} · {{m.city}}</small></span><strong>{{m.score}}</strong></button></section><section class="card"><span class="eyebrow">Рынок</span><h2>Ваш контекст</h2><div class="stat-row"><span>Категория</span><b>{{workspace.summary.category??'—'}}</b></div><div class="stat-row"><span>Ожидание</span><b>{{money(auth.user.salary_expected)}}</b></div><div class="stat-row"><span>Формат</span><b>{{auth.user.work_format??'any'}}</b></div></section></aside></div>
         </template>
 
         <template v-else-if="tab==='matches'">
